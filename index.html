@@ -778,7 +778,12 @@ function renderMemoList() {
     const card = document.createElement('div');
     card.className = 'memo-card';
 
-    // プレビューテキスト生成（lines がある場合はそれを使い、なければ name のみ）
+    // カード全体クリックでメモを開く（削除ボタンは除外）
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.memo-card-del')) return;
+      openMemoEdit(m.id);
+    });
+
     let previewHtml = '';
     if (m.lines && m.lines.length) {
       previewHtml = m.lines.map((l, i) => {
@@ -786,20 +791,23 @@ function renderMemoList() {
           return `<span style="color:var(--text2)">${escHtml(l.text||'カウンター')}: ${l.value||0}</span><br>`;
         }
         if (!l.text) return '';
-        if (l.type === 'numbered') {
-          return `<span class="pv-num">${i + 1}. </span>${escHtml(l.text)}<br>`;
-        }
-        if (l.type === 'bullet') {
-          return `• ${escHtml(l.text)}<br>`;
-        }
+        if (l.type === 'numbered') return `<span class="pv-num">${i + 1}. </span>${escHtml(l.text)}<br>`;
+        if (l.type === 'bullet') return `• ${escHtml(l.text)}<br>`;
         return escHtml(l.text) + '<br>';
       }).join('');
     }
 
     card.innerHTML = `
-      <div class="memo-card-title" onclick="openMemoEdit('${m.id}')">${escHtml(m.name)}</div>
-      ${previewHtml ? `<div class="memo-card-preview" onclick="openMemoEdit('${m.id}')">${previewHtml}</div>` : ''}
-      <button class="memo-card-del" onclick="deleteMemo('${m.id}')" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
+      <div class="memo-card-title">${escHtml(m.name)}</div>
+      ${previewHtml ? `<div class="memo-card-preview">${previewHtml}</div>` : ''}
+      <button class="memo-card-del" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
+
+    // 削除ボタンにイベントを個別に付ける
+    card.querySelector('.memo-card-del').addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteMemo(m.id);
+    });
+
     el.appendChild(card);
   });
 }
@@ -818,7 +826,6 @@ function newMemo() {
 }
 
 async function openMemoEdit(id) {
-  alert('openMemoEdit called: ' + id);
   if (!id || id === 'undefined' || id === 'null') return;
   currentMemoId = id;
   setMemoSyncState('busy', '読み込み中...');
