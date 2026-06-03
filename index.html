@@ -838,6 +838,11 @@ function showMemoEdit() {
 }
 
 function closeMemoEdit() {
+  // 新規メモで未保存のまま戻ろうとした場合
+  const title = document.getElementById('memoTitleInp').value.trim();
+  if (!currentMemoId && title) {
+    if (!confirm('保存せずに戻りますか？\n「キャンセル」で保存画面に戻ります。')) return;
+  }
   document.getElementById('memoEditScreen').classList.remove('active');
   document.getElementById('mainScreen').style.display = 'flex';
   syncMemos();
@@ -948,13 +953,14 @@ async function saveMemo() {
     if (textLines[idx]) memoLines[textLines[idx].i].text = ta.value;
   });
   const title = document.getElementById('memoTitleInp').value.trim() || '無題';
-  const lines = memoLines.filter(l => l.text.trim() !== '' || memoLines.length === 1);
+  const lines = memoLines.filter(l => l.type === 'counter' || (l.text && l.text.trim() !== ''));
+  const saveLines = lines.length > 0 ? lines : [];
   setMemoSyncState('busy', '保存中...');
   try {
     if (currentMemoId) {
-      await gasCall({ action: 'memo_update', id: currentMemoId, memo: { title, lines } });
+      await gasCall({ action: 'memo_update', id: currentMemoId, memo: { title, lines: saveLines } });
     } else {
-      const created = await gasCall({ action: 'memo_create', memo: { title, lines } });
+      const created = await gasCall({ action: 'memo_create', memo: { title, lines: saveLines } });
       currentMemoId = created.id;
     }
     setMemoSyncState('ok', '保存済み');
