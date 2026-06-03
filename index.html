@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tasks">
+<title>Tasks</title>
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#111;--surface:#1e1e1e;--surface2:#2a2a2a;
+  --text:#f0f0f0;--text2:#aaa;--text3:#666;--text4:#444;
+  --border:#2a2a2a;--red:#e53935;--red2:#c62828;
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,'Helvetica Neue',sans-serif;overflow:hidden}
+
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;position:relative}
+
+.header{
+  padding:calc(16px + var(--safe-top)) 16px 8px;
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0
+}
+.header h1{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.hicons{display:flex;gap:18px;color:var(--text2);font-size:20px}
+.hicons i{cursor:pointer;padding:4px}
+
+.tabs{display:flex;gap:4px;padding:0 16px 10px;flex-shrink:0}
+.tab{padding:6px 16px;border-radius:20px;font-size:14px;cursor:pointer;border:none;background:transparent;color:var(--text3);font-family:inherit;transition:all .15s}
+.tab.active{background:var(--text);color:var(--bg);font-weight:500}
+
+.tag-bar{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none;flex-shrink:0}
+.tag-bar::-webkit-scrollbar{display:none}
+.tpill{padding:4px 14px;border-radius:20px;font-size:13px;cursor:pointer;white-space:nowrap;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:inherit;transition:all .15s}
+.tpill.active{border-color:var(--red);background:var(--red);color:#fff}
+.tpill-add{padding:4px 10px;font-size:15px}
+
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+.task-list{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+
+.task-card{
+  background:var(--surface);border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  transition:opacity .15s,background .15s;
+  user-select:none;touch-action:pan-y
+}
+.task-card.done{opacity:.4}
+.task-card.dragging{opacity:.2}
+.task-card.drag-over{background:var(--surface2);outline:1px dashed var(--text4)}
+
+.chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--text4);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
+.chk.done{background:var(--text4);border-color:var(--text4)}
+.chk.done::after{content:'';width:6px;height:10px;border:2px solid var(--text2);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px)}
+
+.tbody{flex:1;min-width:0}
+.tname{font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tname.done{text-decoration:line-through;color:var(--text3)}
+.ttags{display:flex;gap:5px;margin-top:4px;flex-wrap:wrap}
+.ttag{font-size:11px;padding:2px 8px;border-radius:10px}
+
+.tacts{display:flex;gap:4px;align-items:center}
+.grip{color:var(--text4);font-size:18px;padding:6px 4px;cursor:grab;touch-action:none}
+.delbtn{background:none;border:none;color:var(--text4);font-size:16px;cursor:pointer;padding:6px 4px;border-radius:6px;transition:color .15s}
+.delbtn:active{color:var(--red)}
+
+.sec-label{padding:16px 16px 6px;font-size:12px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;align-items:center}
+.clrbtn{background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 0}
+
+.input-area{flex-shrink:0;padding:10px 16px;border-top:1px solid var(--border);padding-bottom:calc(10px + var(--safe-bottom));background:var(--bg)}
+.tag-sel-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;min-height:0}
+.tspill{padding:4px 12px;border-radius:12px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .1s}
+.tspill.sel{background:var(--surface2);color:var(--text2);border-color:var(--text4)}
+
+.fab-row{display:flex;gap:10px;align-items:center}
+.fab-inp{flex:1;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px 16px;color:var(--text);font-size:15px;font-family:inherit;outline:none;transition:border-color .15s}
+.fab-inp:focus{border-color:var(--text4)}
+.fab-inp::placeholder{color:var(--text4)}
+.fab-btn{width:46px;height:46px;border-radius:14px;background:var(--red);border:none;color:#fff;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s;font-family:inherit}
+.fab-btn:active{background:var(--red2)}
+
+.sync-row{display:flex;align-items:center;gap:8px;padding:6px 0 0}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--text4);flex-shrink:0;transition:background .3s}
+.sdot.ok{background:#2e7d32}.sdot.err{background:var(--red)}.sdot.busy{background:#e65100;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.smsg{font-size:12px;color:var(--text3);flex:1}
+.srefresh{background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:2px}
+
+.settings-screen{display:none;flex-direction:column;height:100%}
+.settings-screen.active{display:flex}
+.s-header{padding:calc(16px + var(--safe-top)) 16px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border)}
+.s-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px}
+.s-header h2{font-size:18px;font-weight:500}
+.s-body{flex:1;overflow-y:auto;padding:20px 16px}
+.s-body p{font-size:13px;color:var(--text3);line-height:1.6;margin-bottom:20px}
+.flabel{font-size:12px;color:var(--text2);margin-bottom:6px;display:block}
+.s-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:16px;transition:border-color .15s}
+.s-input:focus{border-color:var(--text4)}
+.s-input::placeholder{color:var(--text4)}
+.s-btn{width:100%;padding:14px;border-radius:12px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;margin-bottom:10px;transition:background .15s}
+.s-btn:active{background:var(--red2)}
+.s-btn.sec{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
+.s-err{font-size:13px;color:var(--red);margin-top:4px;min-height:18px}
+.s-note{font-size:12px;color:var(--text4);line-height:1.6;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+.empty-state{text-align:center;color:var(--text4);font-size:14px;padding:48px 0}
+
+.tag-colors{margin-top:16px}
+.tag-colors h3{font-size:13px;color:var(--text2);margin-bottom:10px}
+.tc-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.tc-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.tc-name{font-size:13px;color:var(--text2);flex:1}
+.tc-swatch{display:flex;gap:6px}
+.tc-opt{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .1s}
+.tc-opt.active{border-color:#fff}
+
+.toast{position:fixed;bottom:calc(80px + var(--safe-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#222;color:var(--text2);font-size:13px;padding:8px 16px;border-radius:20px;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:100}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:200;transition:background .25s;pointer-events:none}
+.sheet-backdrop.open{background:rgba(0,0,0,.6);pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:#1a1a1a;border-radius:20px 20px 0 0;z-index:201;transition:transform .3s cubic-bezier(.32,.72,0,1);padding-bottom:env(safe-area-inset-bottom,0px)}
+.sheet.open{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:36px;height:4px;background:#333;border-radius:2px;margin:12px auto 0}
+.sheet-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px}
+.sheet-header h3{font-size:17px;font-weight:500}
+.sheet-close{background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;padding:4px;line-height:1}
+.sheet-body{padding:0 20px 20px}
+.sheet-inp{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:16px;font-family:inherit;outline:none;margin-bottom:16px;transition:border-color .15s}
+.sheet-inp:focus{border-color:var(--text4)}
+.sheet-label{font-size:12px;color:var(--text3);margin-bottom:8px;display:block}
+.sheet-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.sheet-tag{padding:6px 14px;border-radius:20px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s}
+.sheet-tag.sel{background:var(--surface2);color:var(--text2);border-color:var(--text4)}
+.sheet-tag.new-tag{color:var(--text4);border-style:dashed}
+.sheet-save{width:100%;padding:14px;border-radius:12px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
+.sheet-save:active{background:var(--red2)}
+
+/* メモ一覧 */
+.memo-grid{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s;position:relative;min-height:100px;display:flex;flex-direction:column;gap:8px}
+.memo-card:active{background:var(--surface2)}
+.memo-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-all}
+.memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
+.memo-card-preview .pv-num{color:var(--text2)}
+.memo-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:transparent;font-size:14px;cursor:pointer;padding:4px;transition:color .15s;line-height:1}
+.memo-card:hover .memo-card-del,.memo-card:focus-within .memo-card-del{color:var(--text4)}
+.memo-card-del:active{color:var(--red) !important}
+.memo-fab-row{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;padding-bottom:calc(12px + var(--safe-bottom));display:flex;gap:10px;align-items:center;background:linear-gradient(transparent,var(--bg) 40%);z-index:50}
+.memo-create-btn{flex:1;padding:14px;border-radius:14px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;letter-spacing:.03em;transition:background .15s}
+.memo-create-btn:active{background:var(--red2)}
+.memo-icon-btn{width:46px;height:46px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.memo-icon-btn:active{background:var(--surface2)}
+
+/* メモ編集 */
+.memo-edit-screen{display:none;flex-direction:column;height:100%}
+.memo-edit-screen.active{display:flex}
+.memo-edit-header{padding:calc(12px + var(--safe-top)) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.memo-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0}
+.memo-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:18px;font-weight:600;font-family:inherit;outline:none;padding:4px 0}
+.memo-title-inp::placeholder{color:var(--text4)}
+.memo-save-btn{background:none;border:none;color:var(--red);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;padding:6px 4px;flex-shrink:0}
+.memo-toolbar{display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10}
+.memo-tool{padding:6px 14px;border-radius:10px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px}
+.memo-tool:active{background:var(--surface2)}
+.memo-tool.active-tool{background:var(--surface2);color:var(--text2);border-color:var(--text4)}
+.memo-lines{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:4px}
+.memo-line-row{display:flex;align-items:flex-start;gap:8px}
+.memo-line-num{color:var(--red);font-size:14px;font-weight:500;padding-top:10px;min-width:20px;text-align:right;flex-shrink:0;line-height:1.5}
+.memo-line-bullet{color:var(--text3);padding-top:10px;min-width:20px;text-align:center;flex-shrink:0;line-height:1.5}
+.memo-line-inp{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 4px;line-height:1.5;resize:none;min-height:38px;transition:border-color .15s}
+.memo-line-inp:focus{border-bottom-color:var(--border)}
+.memo-line-del{display:none}
+.memo-add-line{margin:4px 0 0 28px;background:none;border:none;color:var(--text4);font-size:13px;cursor:pointer;font-family:inherit;padding:6px 0;display:flex;align-items:center;gap:6px;transition:color .15s}
+.memo-add-line:active{color:var(--text3)}
+.memo-sync-row{flex-shrink:0;padding:6px 16px;padding-bottom:calc(6px + var(--safe-bottom));display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="mainScreen" style="display:flex;flex-direction:column;height:100%">
+    <div class="header">
+      <h1>Notes</h1>
+      <div class="hicons">
+        <i class="ti ti-refresh" id="refreshBtn" aria-label="同期" onclick="syncFromNotion()"></i>
+        <i class="ti ti-settings" aria-label="設定" onclick="showSettings()"></i>
+      </div>
+    </div>
+    <div class="tabs">
+      <button class="tab" id="tabMemo" onclick="switchTab('memo')">Memo</button>
+      <button class="tab active" id="tabTasks" onclick="switchTab('tasks')">Tasks</button>
+    </div>
+
+    <!-- メモ一覧 -->
+    <div id="memoListArea" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px">
+      <div class="memo-grid" id="memoList"></div>
+      <div class="memo-fab-row">
+        <button class="memo-create-btn" onclick="newMemo()">CREATE A NOTE</button>
+        <button class="memo-icon-btn" onclick="syncMemos()" aria-label="同期"><i class="ti ti-refresh" aria-hidden="true"></i></button>
+      </div>
+    </div>
+    <div class="tag-bar" id="tagBar"></div>
+    <div class="scroll-area" id="scrollArea">
+      <div class="task-list" id="activeTasks"></div>
+      <div id="doneSection" style="display:none">
+        <div class="sec-label">
+          <span>Completed</span>
+          <button class="clrbtn" onclick="clearDone()">Clear all</button>
+        </div>
+        <div class="task-list" id="doneTasks"></div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+    <div class="input-area">
+      <div class="tag-sel-row" id="tagSelRow"></div>
+      <div class="fab-row">
+        <input class="fab-inp" id="taskInput" placeholder="New task..." maxlength="60"
+          onkeydown="if(event.key==='Enter')addTask()">
+        <button class="fab-btn" onclick="addTask()" aria-label="追加">
+          <i class="ti ti-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="sync-row">
+        <span class="sdot" id="syncDot"></span>
+        <span class="smsg" id="syncMsg">未接続 — 設定からGAS URLを入力してください</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- メモ編集画面 -->
+  <div class="memo-edit-screen" id="memoEditScreen">
+    <div class="memo-edit-header">
+      <button class="memo-back" onclick="closeMemoEdit()" aria-label="戻る"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+      <input class="memo-title-inp" id="memoTitleInp" placeholder="題名">
+    </div>
+    <div class="memo-toolbar">
+      <button class="memo-tool" id="toolText" onclick="addLine('text')">
+        <i class="ti ti-text-size" aria-hidden="true"></i> テキスト
+      </button>
+      <button class="memo-tool" id="toolNum" onclick="addLine('numbered')">
+        <i class="ti ti-list-numbers" aria-hidden="true"></i> 番号付き
+      </button>
+      <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red)">
+        <i class="ti ti-device-floppy" aria-hidden="true"></i> 保存
+      </button>
+    </div>
+    <div class="memo-lines" id="memoLines"></div>
+    <div class="memo-sync-row">
+      <span class="sdot" id="memoSyncDot"></span>
+      <span style="font-size:12px;color:var(--text3)" id="memoSyncMsg"></span>
+    </div>
+  </div>
+
+  <div class="settings-screen" id="settingsScreen">
+    <div class="s-header">
+      <button class="s-back" onclick="showMain()" aria-label="戻る"><i class="ti ti-arrow-left" aria-hidden="true"></i></button>
+      <h2>設定</h2>
+    </div>
+    <div class="s-body">
+      <p>GASをデプロイしたウェブアプリのURLを入力してください。NotionのトークンはGAS側に保存されているので、ここでは不要です。</p>
+      <label class="flabel">GAS ウェブアプリURL</label>
+      <input class="s-input" id="gasUrlInput" type="url" placeholder="https://script.google.com/macros/s/...">
+      <button class="s-btn" onclick="saveSettings()">
+        <i class="ti ti-plug" style="font-size:16px;vertical-align:-2px;margin-right:6px" aria-hidden="true"></i>
+        接続して同期
+      </button>
+      <button class="s-btn sec" onclick="showMain()">キャンセル</button>
+      <div class="s-err" id="settingsErr"></div>
+      <div class="s-note">
+        このURLはこのデバイスのlocalStorageにのみ保存されます。<br>
+        NotionのトークンはGASのコード内に記述するため、ブラウザには送信されません。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet-backdrop" id="sheetBackdrop" onclick="closeSheet()"></div>
+<div class="sheet" id="editSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <h3 id="sheetTitle">タスクを編集</h3>
+    <button class="sheet-close" onclick="closeSheet()" aria-label="閉じる"><i class="ti ti-x" aria-hidden="true"></i></button>
+  </div>
+  <div class="sheet-body">
+    <input class="sheet-inp" id="sheetNameInp" placeholder="タスク名" maxlength="60"
+      onkeydown="if(event.key==='Enter')saveSheet()">
+    <span class="sheet-label">タグ</span>
+    <div class="sheet-tags" id="sheetTags"></div>
+    <button class="sheet-save" onclick="saveSheet()">保存</button>
+  </div>
+</div>
+
+<script>
+const TAG_COLORS = {
+  default:{fg:'#888',bg:'#222'},
+  red:{fg:'#ef9a9a',bg:'#3b1010'},
+  pink:{fg:'#f48fb1',bg:'#3b1025'},
+  purple:{fg:'#ce93d8',bg:'#2a1040'},
+  blue:{fg:'#90caf9',bg:'#0d2040'},
+  green:{fg:'#a5d6a7',bg:'#0d2b10'},
+  yellow:{fg:'#fff176',bg:'#3b2e00'},
+  orange:{fg:'#ffcc80',bg:'#3b1e00'},
+  brown:{fg:'#bcaaa4',bg:'#2a1a10'},
+  gray:{fg:'#b0bec5',bg:'#1e2a2e'}
+};
+
+let tasks = [];
+let activeTag = null;
+let selNewTags = [];
+let customTags = [];
+let gasUrl = '';
+let touchDragEl = null, touchClone = null, touchOffX = 0, touchOffY = 0;
+
+// メモ
+let memos = [];
+let currentMemoId = null;
+let memoLines = []; // [{type:'text'|'numbered', text:''}]
+let currentTab = 'tasks';
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabMemo').classList.toggle('active', tab === 'memo');
+  document.getElementById('tabTasks').classList.toggle('active', tab === 'tasks');
+  document.getElementById('tagBar').style.display = tab === 'tasks' ? 'flex' : 'none';
+  document.getElementById('memoListArea').style.display = tab === 'memo' ? 'block' : 'none';
+  document.getElementById('scrollArea').style.display = tab === 'tasks' ? 'block' : 'none';
+  document.querySelector('.input-area').style.display = tab === 'tasks' ? 'block' : 'none';
+  if (tab === 'memo' && memos.length === 0 && gasUrl) syncMemos();
+  if (tab === 'memo') renderMemoList();
+}
+
+function loadSettings() {
+  gasUrl = localStorage.getItem('nt_gas_url') || '';
+  try { customTags = JSON.parse(localStorage.getItem('nt_custom_tags') || '[]'); } catch(e) { customTags = []; }
+}
+function saveSettingsToStorage() {
+  localStorage.setItem('nt_gas_url', gasUrl);
+  localStorage.setItem('nt_custom_tags', JSON.stringify(customTags));
+}
+
+function showSettings() {
+  document.getElementById('gasUrlInput').value = gasUrl;
+  document.getElementById('settingsErr').textContent = '';
+  document.getElementById('settingsScreen').classList.add('active');
+  document.getElementById('mainScreen').style.display = 'none';
+}
+function showMain() {
+  document.getElementById('settingsScreen').classList.remove('active');
+  document.getElementById('mainScreen').style.display = 'flex';
+}
+async function saveSettings() {
+  const url = document.getElementById('gasUrlInput').value.trim();
+  const err = document.getElementById('settingsErr');
+  err.textContent = '';
+  if (!url || !url.startsWith('https://script.google.com')) {
+    err.textContent = 'GASのウェブアプリURLを正しく入力してください';
+    return;
+  }
+  gasUrl = url;
+  saveSettingsToStorage();
+  showMain();
+  await syncFromNotion();
+}
+
+function setSyncState(state, msg) {
+  const dot = document.getElementById('syncDot');
+  dot.className = 'sdot ' + state;
+  document.getElementById('syncMsg').textContent = msg;
+}
+
+async function gasCall(body) {
+  if (!gasUrl) throw new Error('GAS URLが未設定です');
+  const res = await fetch(gasUrl, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || '不明なエラー');
+  return json.data;
+}
+
+async function syncFromNotion() {
+  if (!gasUrl) { setSyncState('', '未接続'); return; }
+  setSyncState('busy', '同期中...');
+  try {
+    const data = await gasCall({ action: 'list' });
+    tasks = data;
+    const notionTags = new Set(customTags);
+    tasks.forEach(t => t.tags.forEach(tg => notionTags.add(getTagName(tg))));
+    customTags = [...notionTags];
+    localStorage.setItem('nt_custom_tags', JSON.stringify(customTags));
+    setSyncState('ok', '同期済み ' + new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }));
+    renderAll();
+    showToast('同期しました');
+  } catch (e) {
+    setSyncState('err', 'エラー: ' + e.message);
+    showToast('同期失敗: ' + e.message);
+  }
+}
+
+async function addTask() {
+  const inp = document.getElementById('taskInput');
+  const name = inp.value.trim();
+  if (!name) return;
+  const tags = selNewTags.map(n => ({ name: n, color: 'default' }));
+  const order = tasks.filter(t => !t.done).length;
+  const tmp = { id: 'tmp_' + Date.now(), name, done: false, tags, order };
+  tasks.unshift(tmp);
+  inp.value = '';
+  selNewTags = [];
+  renderAll();
+  if (!gasUrl) return;
+  setSyncState('busy', '追加中...');
+  try {
+    const created = await gasCall({ action: 'create', task: { name, done: false, tags, order } });
+    const idx = tasks.findIndex(t => t.id === tmp.id);
+    if (idx >= 0) tasks[idx] = created;
+    setSyncState('ok', '追加済み');
+    renderAll();
+  } catch (e) {
+    setSyncState('err', '追加失敗: ' + e.message);
+  }
+}
+
+async function toggleTask(id) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.done = !t.done;
+  renderAll();
+  if (!gasUrl) return;
+  setSyncState('busy', '更新中...');
+  try {
+    await gasCall({ action: 'update', id, props: { done: t.done } });
+    setSyncState('ok', '更新済み');
+  } catch (e) {
+    setSyncState('err', '更新失敗: ' + e.message);
+  }
+}
+
+async function deleteTask(id) {
+  tasks = tasks.filter(t => t.id !== id);
+  renderAll();
+  if (!gasUrl || String(id).startsWith('tmp_')) return;
+  setSyncState('busy', '削除中...');
+  try {
+    await gasCall({ action: 'delete', id });
+    setSyncState('ok', '削除済み');
+  } catch (e) {
+    setSyncState('err', '削除失敗: ' + e.message);
+  }
+}
+
+async function clearDone() {
+  const done = tasks.filter(t => t.done);
+  tasks = tasks.filter(t => !t.done);
+  renderAll();
+  if (!gasUrl) return;
+  setSyncState('busy', '削除中...');
+  try {
+    await Promise.all(done.map(t => gasCall({ action: 'delete', id: t.id })));
+    setSyncState('ok', '削除済み');
+  } catch (e) {
+    setSyncState('err', '削除失敗: ' + e.message);
+  }
+}
+
+async function pushReorder() {
+  if (!gasUrl) return;
+  const active = tasks.filter(t => !t.done);
+  const orders = active.map((t, i) => ({ id: t.id, order: i }));
+  try {
+    await gasCall({ action: 'reorder', orders });
+  } catch (e) {
+    setSyncState('err', '並び替え保存失敗');
+  }
+}
+
+function getTagStyle(tag) {
+  const c = (typeof tag === 'string') ? 'default' : (tag.color || 'default');
+  return TAG_COLORS[c] || TAG_COLORS.default;
+}
+function getTagName(tag) { return typeof tag === 'string' ? tag : (tag.name || ''); }
+function getAllTagNames() {
+  const s = new Set(customTags);
+  tasks.forEach(t => t.tags.forEach(tg => s.add(getTagName(tg))));
+  return [...s];
+}
+
+function renderTagBar() {
+  const bar = document.getElementById('tagBar');
+  const all = ['すべて', ...getAllTagNames()];
+  bar.innerHTML = all.map(t => {
+    const isA = (t === 'すべて' && !activeTag) || t === activeTag;
+    return `<button class="tpill${isA ? ' active' : ''}" onclick="setActiveTag('${t}')">${t}</button>`;
+  }).join('') + `<button class="tpill tpill-add" onclick="promptTag()" aria-label="タグ追加"><i class="ti ti-plus" aria-hidden="true"></i></button>`;
+}
+function setActiveTag(t) { activeTag = (t === 'すべて') ? null : t; renderAll(); }
+function promptTag() {
+  const t = prompt('新しいタグ名:');
+  if (t && t.trim()) {
+    const name = t.trim();
+    if (!customTags.includes(name)) {
+      customTags.push(name);
+      localStorage.setItem('nt_custom_tags', JSON.stringify(customTags));
+    }
+    selNewTags = [...new Set([...selNewTags, name])];
+    renderAll();
+  }
+}
+
+function renderTagSelRow() {
+  const row = document.getElementById('tagSelRow');
+  const names = getAllTagNames();
+  if (!names.length) { row.innerHTML = ''; return; }
+  row.innerHTML = names.map(n => {
+    const sel = selNewTags.includes(n);
+    return `<button class="tspill${sel ? ' sel' : ''}" onclick="toggleSelTag('${n}')">${n}</button>`;
+  }).join('');
+}
+function toggleSelTag(n) {
+  selNewTags = selNewTags.includes(n) ? selNewTags.filter(x => x !== n) : [...selNewTags, n];
+  renderTagSelRow();
+}
+
+function makeCard(task) {
+  const div = document.createElement('div');
+  div.className = 'task-card' + (task.done ? ' done' : '');
+  div.dataset.id = String(task.id);
+  div.draggable = true;
+
+  const tagsHtml = task.tags.length
+    ? `<div class="ttags">${task.tags.map(tg => {
+        const s = getTagStyle(tg);
+        return `<span class="ttag" style="color:${s.fg};background:${s.bg}">${getTagName(tg)}</span>`;
+      }).join('')}</div>`
+    : '';
+
+  div.innerHTML = `
+    <button class="chk${task.done ? ' done' : ''}" onclick="toggleTask('${task.id}')" aria-label="${task.done ? '未完了' : '完了'}"></button>
+    <div class="tbody" onclick="openSheet('${task.id}')" style="cursor:pointer">
+      <div class="tname${task.done ? ' done' : ''}">${task.name}</div>
+      ${tagsHtml}
+    </div>
+    <div class="tacts">
+      <span class="grip" aria-hidden="true"><i class="ti ti-grip-vertical"></i></span>
+      <button class="delbtn" onclick="deleteTask('${task.id}')" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>
+    </div>`;
+
+  setupDragDesktop(div);
+  setupDragTouch(div);
+  return div;
+}
+
+function setupDragDesktop(div) {
+  div.addEventListener('dragstart', e => {
+    setTimeout(() => div.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', div.dataset.id);
+  });
+  div.addEventListener('dragend', () => {
+    div.classList.remove('dragging');
+    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+    pushReorder();
+  });
+  div.addEventListener('dragover', e => {
+    e.preventDefault();
+    if (!div.classList.contains('done')) div.classList.add('drag-over');
+  });
+  div.addEventListener('dragleave', () => div.classList.remove('drag-over'));
+  div.addEventListener('drop', e => {
+    e.preventDefault();
+    div.classList.remove('drag-over');
+    const srcId = e.dataTransfer.getData('text/plain');
+    if (!srcId || srcId === div.dataset.id) return;
+    const si = tasks.findIndex(t => String(t.id) === srcId);
+    const di = tasks.findIndex(t => String(t.id) === div.dataset.id);
+    if (si < 0 || di < 0) return;
+    const [m] = tasks.splice(si, 1);
+    tasks.splice(di, 0, m);
+    renderAll();
+  });
+}
+
+function setupDragTouch(div) {
+  const grip = div.querySelector('.grip');
+  grip.addEventListener('touchstart', e => {
+    e.preventDefault();
+    touchDragEl = div;
+    const touch = e.touches[0];
+    const rect = div.getBoundingClientRect();
+    touchOffX = touch.clientX - rect.left;
+    touchOffY = touch.clientY - rect.top;
+    touchClone = div.cloneNode(true);
+    Object.assign(touchClone.style, {
+      position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
+      width: rect.width + 'px', opacity: '0.75', zIndex: '9999',
+      pointerEvents: 'none', borderRadius: '14px', transition: 'none'
+    });
+    document.body.appendChild(touchClone);
+    div.classList.add('dragging');
+  }, { passive: false });
+}
+
+document.addEventListener('touchmove', e => {
+  if (!touchDragEl) return;
+  e.preventDefault();
+  const touch = e.touches[0];
+  touchClone.style.left = (touch.clientX - touchOffX) + 'px';
+  touchClone.style.top = (touch.clientY - touchOffY) + 'px';
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+  const target = els.find(el => el.classList.contains('task-card') && el !== touchDragEl && !el.classList.contains('done'));
+  if (target) target.classList.add('drag-over');
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  if (!touchDragEl) return;
+  const touch = e.changedTouches[0];
+  const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+  const target = els.find(el => el.classList.contains('task-card') && el !== touchDragEl);
+  if (target) {
+    const si = tasks.findIndex(t => String(t.id) === touchDragEl.dataset.id);
+    const di = tasks.findIndex(t => String(t.id) === target.dataset.id);
+    if (si >= 0 && di >= 0) { const [m] = tasks.splice(si, 1); tasks.splice(di, 0, m); }
+    pushReorder();
+  }
+  touchDragEl.classList.remove('dragging');
+  document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+  if (touchClone) { touchClone.remove(); touchClone = null; }
+  touchDragEl = null;
+  renderAll();
+});
+
+function renderAll() {
+  const fil = activeTag ? tasks.filter(t => t.tags.some(tg => getTagName(tg) === activeTag)) : tasks;
+  const active = fil.filter(t => !t.done);
+  const done = fil.filter(t => t.done);
+  const aEl = document.getElementById('activeTasks');
+  const dEl = document.getElementById('doneTasks');
+  aEl.innerHTML = ''; dEl.innerHTML = '';
+  if (!active.length && !done.length) {
+    aEl.innerHTML = '<div class="empty-state">タスクはありません</div>';
+  }
+  active.forEach(t => aEl.appendChild(makeCard(t)));
+  done.forEach(t => dEl.appendChild(makeCard(t)));
+  document.getElementById('doneSection').style.display = done.length ? 'block' : 'none';
+  renderTagBar();
+  renderTagSelRow();
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+let sheetTaskId = null;
+let sheetSelTags = [];
+
+function openSheet(id) {
+  const task = tasks.find(t => String(t.id) === String(id));
+  if (!task) return;
+  sheetTaskId = id;
+  sheetSelTags = task.tags.map(tg => getTagName(tg));
+  document.getElementById('sheetTitle').textContent = 'タスクを編集';
+  document.getElementById('sheetNameInp').value = task.name;
+  renderSheetTags();
+  document.getElementById('sheetBackdrop').classList.add('open');
+  document.getElementById('editSheet').classList.add('open');
+  setTimeout(() => document.getElementById('sheetNameInp').focus(), 300);
+}
+
+function closeSheet() {
+  document.getElementById('sheetBackdrop').classList.remove('open');
+  document.getElementById('editSheet').classList.remove('open');
+  sheetTaskId = null;
+  sheetSelTags = [];
+}
+
+function renderSheetTags() {
+  const container = document.getElementById('sheetTags');
+  const names = getAllTagNames();
+  container.innerHTML = names.map(n => {
+    const sel = sheetSelTags.includes(n);
+    return `<button class="sheet-tag${sel ? ' sel' : ''}" onclick="toggleSheetTag('${n}')">${n}</button>`;
+  }).join('') +
+  `<button class="sheet-tag new-tag" onclick="addSheetTag()">
+    <i class="ti ti-plus" style="font-size:13px;vertical-align:-1px" aria-hidden="true"></i> 新しいタグ
+  </button>`;
+}
+
+function toggleSheetTag(n) {
+  sheetSelTags = sheetSelTags.includes(n)
+    ? sheetSelTags.filter(x => x !== n)
+    : [...sheetSelTags, n];
+  renderSheetTags();
+}
+
+function addSheetTag() {
+  const t = prompt('新しいタグ名:');
+  if (!t || !t.trim()) return;
+  const name = t.trim();
+  if (!customTags.includes(name)) {
+    customTags.push(name);
+    localStorage.setItem('nt_custom_tags', JSON.stringify(customTags));
+  }
+  if (!sheetSelTags.includes(name)) sheetSelTags.push(name);
+  renderSheetTags();
+}
+
+async function saveSheet() {
+  const name = document.getElementById('sheetNameInp').value.trim();
+  if (!name) return;
+  const task = tasks.find(t => String(t.id) === String(sheetTaskId));
+  if (!task) return;
+  task.name = name;
+  task.tags = sheetSelTags.map(n => {
+    const existing = task.tags.find(tg => getTagName(tg) === n);
+    return existing || { name: n, color: 'default' };
+  });
+  closeSheet();
+  renderAll();
+  if (gasUrl && !String(task.id).startsWith('tmp_')) {
+    setSyncState('busy', '更新中...');
+    try {
+      await gasCall({ action: 'update', id: task.id, props: { name: task.name, tags: task.tags } });
+      setSyncState('ok', '更新済み');
+      showToast('保存しました');
+    } catch (e) {
+      setSyncState('err', '更新失敗: ' + e.message);
+    }
+  }
+}
+
+loadSettings();
+
+// ========== メモ機能 ==========
+
+function setMemoSyncState(state, msg) {
+  const dot = document.getElementById('memoSyncDot');
+  if (dot) { dot.className = 'sdot ' + state; document.getElementById('memoSyncMsg').textContent = msg; }
+}
+
+async function syncMemos() {
+  if (!gasUrl) return;
+  try {
+    memos = await gasCall({ action: 'memo_list' });
+    renderMemoList();
+  } catch(e) { /* サイレント */ }
+}
+
+function renderMemoList() {
+  const el = document.getElementById('memoList');
+  if (!memos.length) {
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 0">メモはありません<br>CREATE A NOTEで作成</div>';
+    return;
+  }
+  el.innerHTML = '';
+  memos.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'memo-card';
+
+    // プレビューテキスト生成（lines がある場合はそれを使い、なければ name のみ）
+    let previewHtml = '';
+    if (m.lines && m.lines.length) {
+      previewHtml = m.lines.map((l, i) => {
+        if (!l.text) return '';
+        if (l.type === 'numbered') {
+          return `<span class="pv-num">${i + 1}. </span>${escHtml(l.text)}<br>`;
+        }
+        return escHtml(l.text) + '<br>';
+      }).join('');
+    }
+
+    card.innerHTML = `
+      <div class="memo-card-title" onclick="openMemoEdit('${m.id}')">${escHtml(m.name)}</div>
+      ${previewHtml ? `<div class="memo-card-preview" onclick="openMemoEdit('${m.id}')">${previewHtml}</div>` : ''}
+      <button class="memo-card-del" onclick="deleteMemo('${m.id}')" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
+    el.appendChild(card);
+  });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function newMemo() {
+  currentMemoId = null;
+  memoLines = [{ type: 'text', text: '' }];
+  document.getElementById('memoTitleInp').value = '';
+  renderMemoLines();
+  showMemoEdit();
+  setTimeout(() => document.getElementById('memoTitleInp').focus(), 200);
+}
+
+async function openMemoEdit(id) {
+  currentMemoId = id;
+  setMemoSyncState('busy', '読み込み中...');
+  showMemoEdit();
+  try {
+    const data = await gasCall({ action: 'memo_get', id });
+    document.getElementById('memoTitleInp').value = data.name === '無題' ? '' : data.name;
+    memoLines = data.lines && data.lines.length ? data.lines : [{ type: 'text', text: '' }];
+    renderMemoLines();
+    setMemoSyncState('ok', '読み込み済み');
+  } catch(e) {
+    setMemoSyncState('err', '読み込み失敗: ' + e.message);
+  }
+}
+
+function showMemoEdit() {
+  document.getElementById('mainScreen').style.display = 'none';
+  document.getElementById('memoEditScreen').classList.add('active');
+}
+
+function closeMemoEdit() {
+  document.getElementById('memoEditScreen').classList.remove('active');
+  document.getElementById('mainScreen').style.display = 'flex';
+  syncMemos();
+}
+
+function renderMemoLines() {
+  const container = document.getElementById('memoLines');
+  container.innerHTML = '';
+  let numCount = 0;
+  memoLines.forEach((line, i) => {
+    if (line.type === 'numbered') numCount++;
+    const lineNum = numCount;
+    const row = document.createElement('div');
+    row.className = 'memo-line-row';
+    const prefix = line.type === 'numbered'
+      ? `<span class="memo-line-num">${lineNum}.</span>`
+      : `<span class="memo-line-bullet"></span>`;
+    row.innerHTML = `
+      ${prefix}
+      <textarea class="memo-line-inp" rows="1" placeholder="${line.type === 'numbered' ? 'リスト項目' : 'テキスト'}">${line.text}</textarea>
+      <button class="memo-line-del" onclick="removeLine(${i})" aria-label="削除"><i class="ti ti-x" aria-hidden="true"></i></button>`;
+    const ta = row.querySelector('textarea');
+    ta.addEventListener('input', () => {
+      memoLines[i].text = ta.value;
+      ta.style.height = 'auto';
+      ta.style.height = ta.scrollHeight + 'px';
+      // 番号付きの場合はプレフィックス番号を全体再描画せず更新
+    });
+    ta.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' && !ev.shiftKey) {
+        ev.preventDefault();
+        memoLines.splice(i + 1, 0, { type: line.type, text: '' });
+        renderMemoLines();
+        // 次の行にフォーカス
+        const rows = document.querySelectorAll('.memo-line-inp');
+        if (rows[i + 1]) rows[i + 1].focus();
+      }
+      if (ev.key === 'Backspace' && ta.value === '' && memoLines.length > 1) {
+        ev.preventDefault();
+        memoLines.splice(i, 1);
+        renderMemoLines();
+        const rows = document.querySelectorAll('.memo-line-inp');
+        if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
+      }
+    });
+    // 高さ自動調整
+    setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
+    container.appendChild(row);
+  });
+
+  // 行追加ボタン
+  const addRow = document.createElement('div');
+  addRow.style.display = 'flex';addRow.style.gap = '8px';addRow.style.marginTop = '8px';addRow.style.paddingLeft = '28px';
+  addRow.innerHTML = `
+    <button class="memo-add-line" onclick="addLine('text')"><i class="ti ti-plus" aria-hidden="true"></i> テキスト</button>
+    <button class="memo-add-line" onclick="addLine('numbered')"><i class="ti ti-list-numbers" aria-hidden="true"></i> 番号付き</button>`;
+  container.appendChild(addRow);
+}
+
+function addLine(type) {
+  memoLines.push({ type, text: '' });
+  renderMemoLines();
+  const rows = document.querySelectorAll('.memo-line-inp');
+  if (rows.length) rows[rows.length - 1].focus();
+}
+
+function removeLine(i) {
+  if (memoLines.length <= 1) { memoLines[0].text = ''; renderMemoLines(); return; }
+  memoLines.splice(i, 1);
+  renderMemoLines();
+}
+
+async function saveMemo() {
+  // 現在の入力を同期
+  document.querySelectorAll('.memo-line-inp').forEach((ta, i) => {
+    if (memoLines[i]) memoLines[i].text = ta.value;
+  });
+  const title = document.getElementById('memoTitleInp').value.trim() || '無題';
+  const lines = memoLines.filter(l => l.text.trim() !== '' || memoLines.length === 1);
+  setMemoSyncState('busy', '保存中...');
+  try {
+    if (currentMemoId) {
+      await gasCall({ action: 'memo_update', id: currentMemoId, memo: { title, lines } });
+    } else {
+      const created = await gasCall({ action: 'memo_create', memo: { title, lines } });
+      currentMemoId = created.id;
+    }
+    setMemoSyncState('ok', '保存済み');
+    showToast('保存しました');
+  } catch(e) {
+    setMemoSyncState('err', '保存失敗: ' + e.message);
+  }
+}
+
+async function deleteMemo(id) {
+  if (!confirm('このメモを削除しますか？')) return;
+  memos = memos.filter(m => m.id !== id);
+  renderMemoList();
+  if (gasUrl) {
+    try { await gasCall({ action: 'memo_delete', id }); } catch(e) {}
+  }
+}
+
+// ========== 初期化 ==========
+if (gasUrl) { syncFromNotion(); } else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
+</script>
+</body>
+</html>
