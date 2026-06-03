@@ -162,12 +162,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 /* メモ編集 */
 .memo-edit-screen{display:none;flex-direction:column;height:100%}
 .memo-edit-screen.active{display:flex}
-.memo-edit-header{padding:calc(12px + var(--safe-top)) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
-.memo-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0}
-.memo-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:18px;font-weight:600;font-family:inherit;outline:none;padding:4px 0}
+.memo-edit-header{padding:calc(12px + var(--safe-top)) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;min-width:0;overflow:visible}
+.memo-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0;min-width:32px}
+.memo-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:18px;font-weight:600;font-family:inherit;outline:none;padding:4px 0;min-width:0;width:0}
 .memo-title-inp::placeholder{color:var(--text4)}
 .memo-save-btn{background:none;border:none;color:var(--red);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;padding:6px 4px;flex-shrink:0}
-.memo-toolbar{display:flex;gap:4px;padding:6px 12px 6px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10;overflow-x:auto;scrollbar-width:none}
+.memo-toolbar{display:flex;gap:4px;padding:6px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10;overflow-x:scroll;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .memo-toolbar::-webkit-scrollbar{display:none}
 .memo-tool{padding:5px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;white-space:nowrap}
 .memo-tool:active{background:var(--surface2)}
@@ -818,16 +818,20 @@ function newMemo() {
 }
 
 async function openMemoEdit(id) {
+  if (!id || id === 'undefined' || id === 'null') return;
   currentMemoId = id;
   setMemoSyncState('busy', '読み込み中...');
   showMemoEdit();
   try {
     const data = await gasCall({ action: 'memo_get', id });
     document.getElementById('memoTitleInp').value = data.name === '無題' ? '' : data.name;
-    memoLines = data.lines && data.lines.length ? data.lines : [{ type: 'text', text: '' }];
+    memoLines = (data.lines && data.lines.length) ? data.lines : [{ type: 'text', text: '' }];
     renderMemoLines();
     setMemoSyncState('ok', '読み込み済み');
   } catch(e) {
+    // 本文なしでも開けるようフォールバック
+    memoLines = [{ type: 'text', text: '' }];
+    renderMemoLines();
     setMemoSyncState('err', '読み込み失敗: ' + e.message);
   }
 }
@@ -838,11 +842,12 @@ function showMemoEdit() {
 }
 
 function closeMemoEdit() {
-  // 新規メモで未保存のまま戻ろうとした場合
   const title = document.getElementById('memoTitleInp').value.trim();
   if (!currentMemoId && title) {
-    if (!confirm('保存せずに戻りますか？\n「キャンセル」で保存画面に戻ります。')) return;
+    if (!confirm('保存せずに戻りますか？')) return;
   }
+  currentMemoId = null;
+  memoLines = [];
   document.getElementById('memoEditScreen').classList.remove('active');
   document.getElementById('mainScreen').style.display = 'flex';
   syncMemos();
