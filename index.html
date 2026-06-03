@@ -770,7 +770,7 @@ async function syncMemos() {
 function renderMemoList() {
   const el = document.getElementById('memoList');
   if (!memos.length) {
-    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 0">メモはありません<br>CREATE A NOTEで作成</div>';
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 0">メモはありません<br>Create a noteで作成</div>';
     return;
   }
   el.innerHTML = '';
@@ -909,10 +909,10 @@ function renderMemoLines() {
   const addRow = document.createElement('div');
   addRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;padding-left:8px;flex-wrap:wrap';
   addRow.innerHTML = `
-    <button class="memo-add-line" onclick="addLine('text')">+ Txt</button>
-    <button class="memo-add-line" onclick="addLine('numbered')">+ 1.2.</button>
-    <button class="memo-add-line" onclick="addLine('bullet')">+ ・</button>
-    <button class="memo-add-line" onclick="addLine('counter')">+ ±</button>`;
+    <button class="memo-add-line" onclick="addLine('text')">Txt</button>
+    <button class="memo-add-line" onclick="addLine('numbered')">1.2.</button>
+    <button class="memo-add-line" onclick="addLine('bullet')">・</button>
+    <button class="memo-add-line" onclick="addLine('counter')">±</button>`;
   container.appendChild(addRow);
 }
 
