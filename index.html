@@ -786,12 +786,16 @@ function renderMemoList() {
 
     let previewHtml = '';
     if (m.lines && m.lines.length) {
-      previewHtml = m.lines.map((l, i) => {
+      let numCount = 0;
+      previewHtml = m.lines.map(l => {
         if (l.type === 'counter') {
           return `<span style="color:var(--text2)">${escHtml(l.text||'カウンター')}: ${l.value||0}</span><br>`;
         }
         if (!l.text) return '';
-        if (l.type === 'numbered') return `<span class="pv-num">${i + 1}. </span>${escHtml(l.text)}<br>`;
+        if (l.type === 'numbered') {
+          numCount++;
+          return `<span class="pv-num">${numCount}. </span>${escHtml(l.text)}<br>`;
+        }
         if (l.type === 'bullet') return `• ${escHtml(l.text)}<br>`;
         return escHtml(l.text) + '<br>';
       }).join('');
