@@ -144,7 +144,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .sheet-tag.sel{background:var(--surface2);color:var(--text2);border-color:var(--text4)}
 .sheet-tag.new-tag{color:var(--text4);border-style:dashed}
 .sheet-save{width:100%;padding:14px;border-radius:12px;background:var(--red);border:none;color:#fff;font-size:15px;font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s}
-.sheet-save:active{background:var(--red2)}
 
 /* タグ管理シート */
 .tag-add-row{display:flex;gap:10px;align-items:center;margin-bottom:16px}
@@ -156,10 +155,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .tag-manage-del{background:none;border:none;color:var(--text4);font-size:16px;cursor:pointer;padding:6px;border-radius:8px;flex-shrink:0;transition:color .15s}
 .tag-manage-del:active{color:var(--red)}
 .tag-manage-empty{font-size:13px;color:var(--text4);text-align:center;padding:24px 0}
+.sheet-save:active{background:var(--red2)}
 
 /* メモ一覧 */
 .memo-grid{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s;position:relative;min-height:100px;display:flex;flex-direction:column;gap:8px}
+.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s,opacity .15s;position:relative;min-height:100px;display:flex;flex-direction:column;gap:8px;touch-action:pan-y;user-select:none}
+.memo-card.dragging{opacity:.3}
+.memo-card.drag-over{outline:2px dashed var(--text4)}
 .memo-card:active{background:var(--surface2)}
 .memo-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-all}
 .memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
@@ -176,13 +178,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 /* メモ編集 */
 .memo-edit-screen{display:none;flex-direction:column;height:100%}
 .memo-edit-screen.active{display:flex}
-.memo-edit-header{padding:calc(12px + var(--safe-top)) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0}
-.memo-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0}
-.memo-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:18px;font-weight:600;font-family:inherit;outline:none;padding:4px 0}
+.memo-edit-header{padding:calc(12px + var(--safe-top)) 16px 8px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);flex-shrink:0;min-width:0;overflow:visible}
+.memo-back{background:none;border:none;color:var(--text2);font-size:20px;cursor:pointer;padding:4px;flex-shrink:0;min-width:32px}
+.memo-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:18px;font-weight:600;font-family:inherit;outline:none;padding:4px 0;min-width:0;width:0}
 .memo-title-inp::placeholder{color:var(--text4)}
 .memo-save-btn{background:none;border:none;color:var(--red);font-size:14px;font-weight:500;cursor:pointer;font-family:inherit;padding:6px 4px;flex-shrink:0}
-.memo-toolbar{display:flex;gap:4px;padding:8px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10}
-.memo-tool{padding:6px 14px;border-radius:10px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px}
+.memo-toolbar{display:flex;gap:4px;padding:6px 16px;border-bottom:1px solid var(--border);flex-shrink:0;position:sticky;top:0;background:var(--bg);z-index:10;overflow-x:scroll;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.memo-toolbar::-webkit-scrollbar{display:none}
+.memo-tool{padding:5px 10px;border-radius:8px;font-size:12px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0;white-space:nowrap}
 .memo-tool:active{background:var(--surface2)}
 .memo-tool.active-tool{background:var(--surface2);color:var(--text2);border-color:var(--text4)}
 .memo-lines{flex:1;overflow-y:auto;padding:12px 16px 12px 20px;display:flex;flex-direction:column;gap:4px}
@@ -192,6 +195,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .memo-line-inp{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 4px;line-height:1.5;resize:none;min-height:38px;transition:border-color .15s}
 .memo-line-inp:focus{border-bottom-color:var(--border)}
 .memo-line-del{display:none}
+.memo-line-bullet-dot{color:var(--text2);padding-top:10px;min-width:28px;text-align:center;flex-shrink:0;line-height:1.5;font-size:18px}
+.memo-counter-row{display:flex;align-items:center;gap:0;background:var(--surface2);border-radius:12px;padding:4px 8px;margin:4px 0}
+.memo-counter-label{flex:1;font-size:15px;color:var(--text);padding:4px 8px;background:transparent;border:none;font-family:inherit;outline:none;min-width:0}
+.memo-counter-label::placeholder{color:var(--text4)}
+.memo-counter-val{font-size:18px;font-weight:600;color:var(--text);min-width:36px;text-align:center}
+.memo-counter-btn{width:36px;height:36px;border-radius:10px;border:none;background:var(--surface);color:var(--text2);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .1s;font-family:inherit;line-height:1}
+.memo-counter-btn:active{background:var(--border)}
 .memo-add-line{margin:4px 0 0 28px;background:none;border:none;color:var(--text4);font-size:13px;cursor:pointer;font-family:inherit;padding:6px 0;display:flex;align-items:center;gap:6px;transition:color .15s}
 .memo-add-line:active{color:var(--text3)}
 .memo-sync-row{flex-shrink:0;padding:6px 16px;padding-bottom:calc(6px + var(--safe-bottom));display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)}
@@ -256,15 +266,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <input class="memo-title-inp" id="memoTitleInp" placeholder="題名">
     </div>
     <div class="memo-toolbar">
-      <button class="memo-tool" id="toolText" onclick="addLine('text')">
-        <i class="ti ti-text-size" aria-hidden="true"></i> テキスト
-      </button>
-      <button class="memo-tool" id="toolNum" onclick="addLine('numbered')">
-        <i class="ti ti-list-numbers" aria-hidden="true"></i> 番号付き
-      </button>
-      <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red)">
-        <i class="ti ti-device-floppy" aria-hidden="true"></i> 保存
-      </button>
+      <button class="memo-tool" onclick="addLine('text')">Txt</button>
+      <button class="memo-tool" onclick="addLine('numbered')">1.2.</button>
+      <button class="memo-tool" onclick="addLine('bullet')">・</button>
+      <button class="memo-tool" onclick="addLine('counter')">±</button>
+      <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red);flex-shrink:0">保存</button>
     </div>
     <div class="memo-lines" id="memoLines"></div>
     <div class="memo-sync-row">
@@ -867,38 +873,181 @@ async function syncMemos() {
   if (!gasUrl) return;
   try {
     memos = await gasCall({ action: 'memo_list' });
+    applyMemoOrder();
     renderMemoList();
   } catch(e) { /* サイレント */ }
+}
+
+function applyMemoOrder() {
+  let order = [];
+  try { order = JSON.parse(localStorage.getItem('nt_memo_order') || '[]'); } catch(e) {}
+  if (!order.length) return;
+  const map = new Map(memos.map(m => [m.id, m]));
+  const ordered = [];
+  order.forEach(id => { if (map.has(id)) { ordered.push(map.get(id)); map.delete(id); } });
+  // 新規メモ（順序リストにないもの）は先頭に追加
+  memos = [...map.values(), ...ordered];
+}
+
+function saveMemoOrder() {
+  localStorage.setItem('nt_memo_order', JSON.stringify(memos.map(m => m.id)));
 }
 
 function renderMemoList() {
   const el = document.getElementById('memoList');
   if (!memos.length) {
-    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 0">メモはありません<br>CREATE A NOTEで作成</div>';
+    el.innerHTML = '<div class="empty-state" style="grid-column:1/-1;padding:48px 0">メモはありません<br>Create a noteで作成</div>';
     return;
   }
   el.innerHTML = '';
-  memos.forEach(m => {
+  memos.forEach((m, idx) => {
     const card = document.createElement('div');
     card.className = 'memo-card';
+    card.draggable = true;
+    card.dataset.id = m.id;
 
-    // プレビューテキスト生成（lines がある場合はそれを使い、なければ name のみ）
+    // カード全体クリックでメモを開く（削除ボタンは除外）
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.memo-card-del')) return;
+      if (card.classList.contains('long-press')) { card.classList.remove('long-press'); return; }
+      openMemoEdit(m.id);
+    });
+
     let previewHtml = '';
     if (m.lines && m.lines.length) {
-      previewHtml = m.lines.map((l, i) => {
+      let numCount = 0;
+      previewHtml = m.lines.map(l => {
+        if (l.type === 'counter') {
+          return `<span style="color:var(--text2)">${escHtml(l.text||'カウンター')}: ${l.value||0}</span><br>`;
+        }
         if (!l.text) return '';
         if (l.type === 'numbered') {
-          return `<span class="pv-num">${i + 1}. </span>${escHtml(l.text)}<br>`;
+          numCount++;
+          return `<span class="pv-num">${numCount}. </span>${escHtml(l.text)}<br>`;
         }
+        if (l.type === 'bullet') return `• ${escHtml(l.text)}<br>`;
         return escHtml(l.text) + '<br>';
       }).join('');
     }
 
     card.innerHTML = `
-      <div class="memo-card-title" onclick="openMemoEdit('${m.id}')">${escHtml(m.name)}</div>
-      ${previewHtml ? `<div class="memo-card-preview" onclick="openMemoEdit('${m.id}')">${previewHtml}</div>` : ''}
-      <button class="memo-card-del" onclick="deleteMemo('${m.id}')" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
+      <div class="memo-card-title">${escHtml(m.name)}</div>
+      ${previewHtml ? `<div class="memo-card-preview">${previewHtml}</div>` : ''}
+      <button class="memo-card-del" aria-label="削除"><i class="ti ti-trash" aria-hidden="true"></i></button>`;
+
+    // 削除ボタンにイベントを個別に付ける
+    card.querySelector('.memo-card-del').addEventListener('click', function(e) {
+      e.stopPropagation();
+      deleteMemo(m.id);
+    });
+
+    setupMemoDragDesktop(card);
+    setupMemoDragTouch(card);
+
     el.appendChild(card);
+  });
+}
+
+// ---- メモカードの並び替え ----
+
+function setupMemoDragDesktop(card) {
+  card.addEventListener('dragstart', e => {
+    setTimeout(() => card.classList.add('dragging'), 0);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', card.dataset.id);
+  });
+  card.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.memo-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    saveMemoOrder();
+  });
+  card.addEventListener('dragover', e => {
+    e.preventDefault();
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const srcId = e.dataTransfer.getData('text/plain');
+    if (!srcId || srcId === card.dataset.id) return;
+    const si = memos.findIndex(m => m.id === srcId);
+    const di = memos.findIndex(m => m.id === card.dataset.id);
+    if (si < 0 || di < 0) return;
+    const [moved] = memos.splice(si, 1);
+    memos.splice(di, 0, moved);
+    renderMemoList();
+  });
+}
+
+let memoTouchDragEl = null, memoTouchClone = null, memoTouchOffX = 0, memoTouchOffY = 0, memoLongPressTimer = null;
+
+function setupMemoDragTouch(card) {
+  card.addEventListener('touchstart', e => {
+    if (e.target.closest('.memo-card-del')) return;
+    const touch = e.touches[0];
+    const startX = touch.clientX, startY = touch.clientY;
+    memoLongPressTimer = setTimeout(() => {
+      memoTouchDragEl = card;
+      card.classList.add('long-press', 'dragging');
+      const rect = card.getBoundingClientRect();
+      memoTouchOffX = startX - rect.left;
+      memoTouchOffY = startY - rect.top;
+      memoTouchClone = card.cloneNode(true);
+      Object.assign(memoTouchClone.style, {
+        position: 'fixed', left: rect.left + 'px', top: rect.top + 'px',
+        width: rect.width + 'px', height: rect.height + 'px', opacity: '0.85',
+        zIndex: '9999', pointerEvents: 'none', transition: 'none',
+        boxShadow: '0 8px 24px rgba(0,0,0,.5)'
+      });
+      document.body.appendChild(memoTouchClone);
+      if (navigator.vibrate) navigator.vibrate(15);
+    }, 400);
+  }, { passive: true });
+
+  card.addEventListener('touchmove', e => {
+    const touch = e.touches[0];
+    if (!memoTouchDragEl) {
+      // 動いたら長押し判定キャンセル
+      clearTimeout(memoLongPressTimer);
+      return;
+    }
+    if (memoTouchDragEl !== card) return;
+    e.preventDefault();
+    memoTouchClone.style.left = (touch.clientX - memoTouchOffX) + 'px';
+    memoTouchClone.style.top = (touch.clientY - memoTouchOffY) + 'px';
+    document.querySelectorAll('.memo-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const target = els.find(el => el.classList.contains('memo-card') && el !== memoTouchDragEl);
+    if (target) target.classList.add('drag-over');
+  }, { passive: false });
+
+  card.addEventListener('touchend', e => {
+    clearTimeout(memoLongPressTimer);
+    if (memoTouchDragEl !== card) return;
+    const touch = e.changedTouches[0];
+    const els = document.elementsFromPoint(touch.clientX, touch.clientY);
+    const target = els.find(el => el.classList.contains('memo-card') && el !== memoTouchDragEl);
+    if (target) {
+      const si = memos.findIndex(m => m.id === memoTouchDragEl.dataset.id);
+      const di = memos.findIndex(m => m.id === target.dataset.id);
+      if (si >= 0 && di >= 0) { const [moved] = memos.splice(si, 1); memos.splice(di, 0, moved); }
+      saveMemoOrder();
+    }
+    document.querySelectorAll('.memo-card.drag-over').forEach(el => el.classList.remove('drag-over'));
+    if (memoTouchClone) { memoTouchClone.remove(); memoTouchClone = null; }
+    memoTouchDragEl.classList.remove('dragging');
+    memoTouchDragEl = null;
+    renderMemoList();
+  });
+
+  card.addEventListener('touchcancel', () => {
+    clearTimeout(memoLongPressTimer);
+    if (memoTouchDragEl === card) {
+      memoTouchDragEl.classList.remove('dragging', 'long-press');
+      if (memoTouchClone) { memoTouchClone.remove(); memoTouchClone = null; }
+      memoTouchDragEl = null;
+    }
   });
 }
 
@@ -916,16 +1065,20 @@ function newMemo() {
 }
 
 async function openMemoEdit(id) {
+  if (!id || id === 'undefined' || id === 'null') return;
   currentMemoId = id;
   setMemoSyncState('busy', '読み込み中...');
   showMemoEdit();
   try {
     const data = await gasCall({ action: 'memo_get', id });
     document.getElementById('memoTitleInp').value = data.name === '無題' ? '' : data.name;
-    memoLines = data.lines && data.lines.length ? data.lines : [{ type: 'text', text: '' }];
+    memoLines = (data.lines && data.lines.length) ? data.lines : [{ type: 'text', text: '' }];
     renderMemoLines();
     setMemoSyncState('ok', '読み込み済み');
   } catch(e) {
+    // 本文なしでも開けるようフォールバック
+    memoLines = [{ type: 'text', text: '' }];
+    renderMemoLines();
     setMemoSyncState('err', '読み込み失敗: ' + e.message);
   }
 }
@@ -936,6 +1089,12 @@ function showMemoEdit() {
 }
 
 function closeMemoEdit() {
+  const title = document.getElementById('memoTitleInp').value.trim();
+  if (!currentMemoId && title) {
+    if (!confirm('保存せずに戻りますか？')) return;
+  }
+  currentMemoId = null;
+  memoLines = [];
   document.getElementById('memoEditScreen').classList.remove('active');
   document.getElementById('mainScreen').style.display = 'flex';
   syncMemos();
@@ -949,57 +1108,86 @@ function renderMemoLines() {
     if (line.type === 'numbered') numCount++;
     const lineNum = numCount;
     const row = document.createElement('div');
-    row.className = 'memo-line-row';
-    const prefix = line.type === 'numbered'
-      ? `<span class="memo-line-num">${lineNum}.</span>`
-      : `<span class="memo-line-bullet"></span>`;
-    row.innerHTML = `
-      ${prefix}
-      <textarea class="memo-line-inp" rows="1" placeholder="${line.type === 'numbered' ? 'リスト項目' : 'テキスト'}">${line.text}</textarea>
-      <button class="memo-line-del" onclick="removeLine(${i})" aria-label="削除"><i class="ti ti-x" aria-hidden="true"></i></button>`;
-    const ta = row.querySelector('textarea');
-    ta.addEventListener('input', () => {
-      memoLines[i].text = ta.value;
-      ta.style.height = 'auto';
-      ta.style.height = ta.scrollHeight + 'px';
-      // 番号付きの場合はプレフィックス番号を全体再描画せず更新
-    });
-    ta.addEventListener('keydown', ev => {
-      if (ev.key === 'Enter' && !ev.shiftKey) {
-        ev.preventDefault();
-        memoLines.splice(i + 1, 0, { type: line.type, text: '' });
-        renderMemoLines();
-        // 次の行にフォーカス
-        const rows = document.querySelectorAll('.memo-line-inp');
-        if (rows[i + 1]) rows[i + 1].focus();
+
+    if (line.type === 'counter') {
+      // カウンター行
+      row.className = 'memo-counter-row';
+      row.innerHTML = `
+        <input class="memo-counter-label" placeholder="ラベル" value="${escHtml(line.text || '')}">
+        <button class="memo-counter-btn" onclick="changeCount(${i},-1)">−</button>
+        <span class="memo-counter-val">${line.value !== undefined ? line.value : 0}</span>
+        <button class="memo-counter-btn" onclick="changeCount(${i},+1)">+</button>`;
+      row.querySelector('.memo-counter-label').addEventListener('input', ev => {
+        memoLines[i].text = ev.target.value;
+      });
+    } else {
+      // テキスト・番号付き・ブレット行
+      row.className = 'memo-line-row';
+      let prefix;
+      if (line.type === 'numbered') {
+        prefix = `<span class="memo-line-num">${lineNum}.</span>`;
+      } else if (line.type === 'bullet') {
+        prefix = `<span class="memo-line-bullet-dot">•</span>`;
+      } else {
+        prefix = `<span class="memo-line-bullet"></span>`;
       }
-      if (ev.key === 'Backspace' && ta.value === '' && memoLines.length > 1) {
-        ev.preventDefault();
-        memoLines.splice(i, 1);
-        renderMemoLines();
-        const rows = document.querySelectorAll('.memo-line-inp');
-        if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
-      }
-    });
-    // 高さ自動調整
-    setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
+      row.innerHTML = `
+        ${prefix}
+        <textarea class="memo-line-inp" rows="1" placeholder="${line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : 'テキスト'}">${escHtml(line.text || '')}</textarea>
+        <button class="memo-line-del" aria-label="削除"></button>`;
+      const ta = row.querySelector('textarea');
+      ta.addEventListener('input', () => {
+        memoLines[i].text = ta.value;
+        ta.style.height = 'auto';
+        ta.style.height = ta.scrollHeight + 'px';
+      });
+      ta.addEventListener('keydown', ev => {
+        if (ev.key === 'Enter' && !ev.shiftKey) {
+          ev.preventDefault();
+          memoLines.splice(i + 1, 0, { type: line.type, text: '', value: line.type === 'counter' ? 0 : undefined });
+          renderMemoLines();
+          const rows = document.querySelectorAll('.memo-line-inp');
+          if (rows[i + 1]) rows[i + 1].focus();
+        }
+        if (ev.key === 'Backspace' && ta.value === '' && memoLines.length > 1) {
+          ev.preventDefault();
+          memoLines.splice(i, 1);
+          renderMemoLines();
+          const rows = document.querySelectorAll('.memo-line-inp');
+          if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
+        }
+      });
+      setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
+    }
     container.appendChild(row);
   });
 
-  // 行追加ボタン
+  // 行追加ボタン（下部）
   const addRow = document.createElement('div');
-  addRow.style.display = 'flex';addRow.style.gap = '8px';addRow.style.marginTop = '8px';addRow.style.paddingLeft = '28px';
+  addRow.style.cssText = 'display:flex;gap:8px;margin-top:8px;padding-left:8px;flex-wrap:wrap';
   addRow.innerHTML = `
-    <button class="memo-add-line" onclick="addLine('text')"><i class="ti ti-plus" aria-hidden="true"></i> テキスト</button>
-    <button class="memo-add-line" onclick="addLine('numbered')"><i class="ti ti-list-numbers" aria-hidden="true"></i> 番号付き</button>`;
+    <button class="memo-add-line" onclick="addLine('text')">Txt</button>
+    <button class="memo-add-line" onclick="addLine('numbered')">1.2.</button>
+    <button class="memo-add-line" onclick="addLine('bullet')">・</button>
+    <button class="memo-add-line" onclick="addLine('counter')">±</button>`;
   container.appendChild(addRow);
 }
 
-function addLine(type) {
-  memoLines.push({ type, text: '' });
+function changeCount(i, delta) {
+  if (memoLines[i].value === undefined) memoLines[i].value = 0;
+  memoLines[i].value += delta;
   renderMemoLines();
-  const rows = document.querySelectorAll('.memo-line-inp');
-  if (rows.length) rows[rows.length - 1].focus();
+}
+
+function addLine(type) {
+  const newLine = { type, text: '' };
+  if (type === 'counter') newLine.value = 0;
+  memoLines.push(newLine);
+  renderMemoLines();
+  if (type !== 'counter') {
+    const rows = document.querySelectorAll('.memo-line-inp');
+    if (rows.length) rows[rows.length - 1].focus();
+  }
 }
 
 function removeLine(i) {
@@ -1009,18 +1197,22 @@ function removeLine(i) {
 }
 
 async function saveMemo() {
-  // 現在の入力を同期
-  document.querySelectorAll('.memo-line-inp').forEach((ta, i) => {
-    if (memoLines[i]) memoLines[i].text = ta.value;
+  // 現在の入力を同期（テキスト系のみ）
+  document.querySelectorAll('.memo-line-inp').forEach((ta, idx) => {
+    // memo-line-inpのインデックスとmemoLinesのインデックスが対応しない場合があるので
+    // data-index属性で管理する代わりに、counter以外の行を順番に対応させる
+    const textLines = memoLines.map((l,i) => ({l,i})).filter(({l}) => l.type !== 'counter');
+    if (textLines[idx]) memoLines[textLines[idx].i].text = ta.value;
   });
   const title = document.getElementById('memoTitleInp').value.trim() || '無題';
-  const lines = memoLines.filter(l => l.text.trim() !== '' || memoLines.length === 1);
+  const lines = memoLines.filter(l => l.type === 'counter' || (l.text && l.text.trim() !== ''));
+  const saveLines = lines.length > 0 ? lines : [];
   setMemoSyncState('busy', '保存中...');
   try {
     if (currentMemoId) {
-      await gasCall({ action: 'memo_update', id: currentMemoId, memo: { title, lines } });
+      await gasCall({ action: 'memo_update', id: currentMemoId, memo: { title, lines: saveLines } });
     } else {
-      const created = await gasCall({ action: 'memo_create', memo: { title, lines } });
+      const created = await gasCall({ action: 'memo_create', memo: { title, lines: saveLines } });
       currentMemoId = created.id;
     }
     setMemoSyncState('ok', '保存済み');
