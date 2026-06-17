@@ -1231,6 +1231,25 @@ async function deleteMemo(id) {
   }
 }
 
+// ========== タブスワイプ切り替え ==========
+(function() {
+  const el = document.getElementById('mainScreen');
+  let sx, sy;
+  el.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+  el.addEventListener('touchend', e => {
+    if (sx == null) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    sx = null;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (dx > 0 && currentTab === 'tasks') switchTab('memo');
+    else if (dx < 0 && currentTab === 'memo') switchTab('tasks');
+  }, { passive: true });
+})();
+
 // ========== 初期化 ==========
 if (gasUrl) { syncFromNotion(); } else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
 </script>
