@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NeoNoting</string>
+    <string name="widget_description">NeoNoting のタスクをホーム画面に表示</string>
+    <string name="config_hint">NeoNoting 本体の「設定」に入れているのと同じ GAS の URL を貼り付けてください。</string>
+    <string name="gas_url_label">GAS Web アプリ URL</string>
+    <string name="save">保存</string>
+    <string name="refresh">更新</string>
+    <string name="toggle_done">完了切り替え</string>
+    <string name="empty_message">タスクなし／GAS URL 未設定。\nタップして本体を開くか、更新してください。</string>
+</resources>

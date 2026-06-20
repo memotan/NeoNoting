@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NeoNotingWidget">
+
+        <!-- GAS URL を入力する設定画面。ウィジェット配置時に開く -->
+        <activity
+            android:name=".ConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.NeoNotingWidget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+            <!-- ランチャーからも開けるようにして、後から URL を変更できる -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ホーム画面ウィジェット本体 -->
+        <receiver
+            android:name=".TaskWidgetProvider"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/task_widget_info" />
+        </receiver>
+
+        <!-- リスト表示を供給する RemoteViewsService -->
+        <service
+            android:name=".TaskWidgetService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
+    </application>
+</manifest>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#111111"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:paddingBottom="4dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/config_hint"
+        android:textColor="#9CA3AF"
+        android:textSize="13sp"
+        android:paddingBottom="20dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/gas_url_label"
+        android:textColor="#E5E7EB"
+        android:textSize="14sp"
+        android:paddingBottom="6dp" />
+
+    <EditText
+        android:id="@+id/input_gas_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="https://script.google.com/macros/s/XXXX/exec"
+        android:textColorHint="#6B7280"
+        android:textColor="#FFFFFF"
+        android:inputType="textUri"
+        android:maxLines="3"
+        android:background="@drawable/input_bg"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/btn_save"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="@string/save" />
+</LinearLayout>
