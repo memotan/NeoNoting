@@ -1264,9 +1264,7 @@ async function handleDeepLink() {
   }
   if (memoId && gasUrl) {
     try {
-      await syncFromNotion();
       switchTab('memo');
-      await syncMemos();
       await openMemoEdit(memoId);
     } catch(e) { console.error('Deep link error:', e); }
     history.replaceState(null, '', window.location.pathname);
