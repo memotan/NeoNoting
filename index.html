@@ -1251,7 +1251,35 @@ async function deleteMemo(id) {
 })();
 
 // ========== 初期化 ==========
-if (gasUrl) { syncFromNotion(); } else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
+async function handleDeepLink() {
+  // Check hash fragment first (#memo=ID), then query params (?memo=ID)
+  let memoId = null;
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#memo=')) {
+    memoId = decodeURIComponent(hash.substring(6));
+  }
+  if (!memoId) {
+    const params = new URLSearchParams(window.location.search);
+    memoId = params.get('memo');
+  }
+  if (memoId && gasUrl) {
+    try {
+      await syncFromNotion();
+      switchTab('memo');
+      await syncMemos();
+      await openMemoEdit(memoId);
+    } catch(e) { console.error('Deep link error:', e); }
+    history.replaceState(null, '', window.location.pathname);
+    return true;
+  }
+  return false;
+}
+if (gasUrl) {
+  handleDeepLink().then(handled => {
+    if (!handled) syncFromNotion();
+  });
+  window.addEventListener('hashchange', () => handleDeepLink());
+} else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
 </script>
 </body>
 </html>
