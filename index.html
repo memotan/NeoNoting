@@ -62,6 +62,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--text4);background:transparent;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .15s;padding:0}
 .chk.done{background:var(--text4);border-color:var(--text4)}
 .chk.done::after{content:'';width:6px;height:10px;border:2px solid var(--text2);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px)}
+.chk:disabled{cursor:default}
 
 .tbody{flex:1;min-width:0}
 .tname{font-size:15px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -317,7 +318,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       onkeydown="if(event.key==='Enter')saveSheet()">
     <span class="sheet-label">タグ</span>
     <div class="sheet-tags" id="sheetTags"></div>
-    <button class="sheet-save" onclick="saveSheet()">保存</button>
+    <button class="sheet-save" id="sheetSaveBtn" onclick="saveSheet()">保存</button>
   </div>
 </div>
 
@@ -661,7 +662,7 @@ function makeCard(task) {
     : '';
 
   div.innerHTML = `
-    <button class="chk${task.done ? ' done' : ''}" onclick="toggleTask('${task.id}')" aria-label="${task.done ? '未完了' : '完了'}"></button>
+    <button class="chk${task.done ? ' done' : ''}" ${task.done ? 'disabled' : `onclick="toggleTask('${task.id}')"`} aria-label="${task.done ? '未完了' : '完了'}"></button>
     <div class="tbody" onclick="openSheet('${task.id}')" style="cursor:pointer">
       <div class="tname${task.done ? ' done' : ''}">${task.name}</div>
       ${tagsHtml}
@@ -792,6 +793,7 @@ function openSheet(id) {
   sheetSelTags = task.tags.map(tg => getTagName(tg));
   document.getElementById('sheetTitle').textContent = 'タスクを編集';
   document.getElementById('sheetNameInp').value = task.name;
+  document.getElementById('sheetSaveBtn').textContent = task.done ? '復活' : '保存';
   renderSheetTags();
   document.getElementById('sheetBackdrop').classList.add('open');
   document.getElementById('editSheet').classList.add('open');
@@ -841,22 +843,28 @@ async function saveSheet() {
   if (!name) return;
   const task = tasks.find(t => String(t.id) === String(sheetTaskId));
   if (!task) return;
+  const wasDone = task.done;
   task.name = name;
   task.tags = sheetSelTags.map(n => {
     const existing = task.tags.find(tg => getTagName(tg) === n);
     return existing || { name: n, color: 'default' };
   });
+  if (wasDone) task.done = false;
   closeSheet();
   renderAll();
   if (gasUrl && !String(task.id).startsWith('tmp_')) {
-    setSyncState('busy', '更新中...');
+    setSyncState('busy', wasDone ? '復活中...' : '更新中...');
     try {
-      await gasCall({ action: 'update', id: task.id, props: { name: task.name, tags: task.tags } });
-      setSyncState('ok', '更新済み');
-      showToast('保存しました');
+      const props = { name: task.name, tags: task.tags };
+      if (wasDone) props.done = false;
+      await gasCall({ action: 'update', id: task.id, props });
+      setSyncState('ok', wasDone ? '復活済み' : '更新済み');
+      showToast(wasDone ? 'タスクを復活しました' : '保存しました');
     } catch (e) {
-      setSyncState('err', '更新失敗: ' + e.message);
+      setSyncState('err', (wasDone ? '復活失敗: ' : '更新失敗: ') + e.message);
     }
+  } else if (wasDone) {
+    showToast('タスクを復活しました');
   }
 }
 
