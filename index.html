@@ -365,6 +365,7 @@ let touchDragEl = null, touchClone = null, touchOffX = 0, touchOffY = 0;
 let memos = [];
 let currentMemoId = null;
 let memoLines = []; // [{type:'text'|'numbered', text:''}]
+let focusedLineIndex = null;
 let currentTab = 'tasks';
 
 function switchTab(tab) {
@@ -1070,6 +1071,7 @@ function escHtml(s) {
 function newMemo() {
   currentMemoId = null;
   memoLines = [{ type: 'text', text: '' }];
+  focusedLineIndex = null;
   document.getElementById('memoTitleInp').value = '';
   renderMemoLines();
   showMemoEdit();
@@ -1079,6 +1081,7 @@ function newMemo() {
 async function openMemoEdit(id) {
   if (!id || id === 'undefined' || id === 'null') return;
   currentMemoId = id;
+  focusedLineIndex = null;
   setMemoSyncState('busy', '読み込み中...');
   showMemoEdit();
   try {
@@ -1129,9 +1132,11 @@ function renderMemoLines() {
         <button class="memo-counter-btn" onclick="changeCount(${i},-1)">−</button>
         <span class="memo-counter-val">${line.value !== undefined ? line.value : 0}</span>
         <button class="memo-counter-btn" onclick="changeCount(${i},+1)">+</button>`;
-      row.querySelector('.memo-counter-label').addEventListener('input', ev => {
+      const counterLabel = row.querySelector('.memo-counter-label');
+      counterLabel.addEventListener('input', ev => {
         memoLines[i].text = ev.target.value;
       });
+      counterLabel.addEventListener('focus', () => { focusedLineIndex = i; });
     } else {
       // テキスト・番号付き・ブレット行
       row.className = 'memo-line-row';
@@ -1153,6 +1158,7 @@ function renderMemoLines() {
         ta.style.height = 'auto';
         ta.style.height = ta.scrollHeight + 'px';
       });
+      ta.addEventListener('focus', () => { focusedLineIndex = i; });
       ta.addEventListener('keydown', ev => {
         if (ev.key === 'Enter' && !ev.shiftKey) {
           ev.preventDefault();
@@ -1194,12 +1200,15 @@ function changeCount(i, delta) {
 function addLine(type) {
   const newLine = { type, text: '' };
   if (type === 'counter') newLine.value = 0;
-  memoLines.push(newLine);
+  const insertAt = (focusedLineIndex != null && focusedLineIndex >= 0 && focusedLineIndex < memoLines.length)
+    ? focusedLineIndex + 1
+    : memoLines.length;
+  memoLines.splice(insertAt, 0, newLine);
   renderMemoLines();
-  if (type !== 'counter') {
-    const rows = document.querySelectorAll('.memo-line-inp');
-    if (rows.length) rows[rows.length - 1].focus();
-  }
+  focusedLineIndex = insertAt;
+  const row = document.getElementById('memoLines').children[insertAt];
+  const focusEl = row && row.querySelector('textarea, .memo-counter-label');
+  if (focusEl) focusEl.focus();
 }
 
 function removeLine(i) {
