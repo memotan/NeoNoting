@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #111111; --surface: #1e1e1e; --surface2: #2a2a2a;
+  --text: #f0f0f0; --text2: #aaa; --text3: #666;
+  --red: #e53935; --border: #2a2a2a;
+}
+html, body {
+  height: 100%; background: transparent; color: var(--text);
+  font-family: 'Segoe UI', -apple-system, sans-serif; overflow: hidden;
+  user-select: none;
+}
+#widget {
+  width: 320px; height: 500px; background: var(--bg);
+  border-radius: 16px; border: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* Drag bar */
+.drag-bar {
+  height: 28px; display: flex; align-items: center; justify-content: center;
+  -webkit-app-region: drag; flex-shrink: 0; cursor: grab;
+}
+.drag-dot { width: 40px; height: 4px; background: var(--text3); border-radius: 2px; }
+
+/* Header */
+.header {
+  display: flex; align-items: center; padding: 0 14px 10px; gap: 6px; flex-shrink: 0;
+}
+.tab {
+  padding: 5px 14px; border-radius: 16px; font-size: 13px; cursor: pointer;
+  border: none; background: transparent; color: var(--text3); font-family: inherit;
+  transition: all .15s; -webkit-app-region: no-drag;
+}
+.tab.active { background: var(--text); color: var(--bg); font-weight: 600; }
+.spacer { flex: 1; }
+.hbtn {
+  width: 30px; height: 30px; border-radius: 8px; border: none;
+  background: var(--surface); color: var(--text2); font-size: 16px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; -webkit-app-region: no-drag;
+}
+.hbtn:hover { background: var(--surface2); }
+
+/* List */
+.list-area {
+  flex: 1; overflow-y: auto; padding: 0 14px; display: flex;
+  flex-direction: column; gap: 6px;
+}
+.list-area::-webkit-scrollbar { width: 4px; }
+.list-area::-webkit-scrollbar-thumb { background: var(--text3); border-radius: 2px; }
+
+/* Task item */
+.task-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--surface); border-radius: 10px; cursor: pointer;
+  transition: background .15s;
+}
+.task-item:hover { background: var(--surface2); }
+.task-check {
+  width: 20px; height: 20px; border: 2px solid var(--text3); border-radius: 50%;
+  flex-shrink: 0; cursor: pointer; transition: all .15s;
+}
+.task-check:hover { border-color: var(--red); }
+.task-info { flex: 1; min-width: 0; }
+.task-name { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.task-tags { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* Memo item */
+.memo-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--surface); border-radius: 10px; cursor: pointer;
+  transition: background .15s;
+}
+.memo-item:hover { background: var(--surface2); }
+.memo-icon { font-size: 14px; flex-shrink: 0; }
+.memo-name { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Status */
+.status {
+  padding: 8px 14px; font-size: 11px; color: var(--text3); text-align: center;
+  flex-shrink: 0;
+}
+
+/* Edit dialog overlay */
+.overlay {
+  display: none; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.6); z-index: 10; align-items: center; justify-content: center;
+}
+.overlay.active { display: flex; }
+.dialog {
+  width: 280px; background: var(--surface); border-radius: 14px; padding: 20px;
+}
+.dialog h3 { font-size: 16px; color: var(--text); margin-bottom: 14px; font-weight: 600; }
+.dialog input {
+  width: 100%; padding: 10px 12px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px; font-family: inherit; outline: none;
+}
+.dialog input:focus { border-color: var(--red); }
+.dialog-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+.dialog-btns button {
+  padding: 8px 16px; border: none; border-radius: 8px; font-size: 13px;
+  cursor: pointer; font-family: inherit;
+}
+.btn-cancel { background: transparent; color: var(--text2); }
+.btn-ok { background: var(--red); color: #fff; font-weight: 600; }
+
+/* Tag pills in list */
+.task-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  font-size: 10px; margin-right: 4px; line-height: 1.4;
+}
+
+/* Tag pills in dialog */
+.tag-section { margin-top: 12px; }
+.tag-section-label { font-size: 11px; color: var(--text2); margin-bottom: 6px; }
+.tag-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag-pill {
+  padding: 4px 10px; border-radius: 12px; font-size: 12px;
+  cursor: pointer; border: 1px solid var(--border); transition: all .15s;
+  user-select: none;
+}
+.tag-pill.selected { border-color: transparent; }
+
+/* Empty state */
+.empty { padding: 40px 0; text-align: center; color: var(--text3); font-size: 13px; }
+
+/* Settings */
+.settings-area {
+  display: none; flex: 1; padding: 14px; flex-direction: column; gap: 12px;
+}
+.settings-area.active { display: flex; }
+.settings-area label { font-size: 12px; color: var(--text2); }
+.settings-area input {
+  width: 100%; padding: 8px 10px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 13px; font-family: inherit; outline: none;
+}
+.settings-area input:focus { border-color: var(--red); }
+.settings-save {
+  padding: 10px; background: var(--red); color: #fff; border: none; border-radius: 8px;
+  font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div id="widget">
+  <div class="drag-bar"><div class="drag-dot"></div></div>
+
+  <div class="header" id="mainHeader">
+    <button class="tab active" id="tabMemo" onclick="switchTab('memo')">Memo</button>
+    <button class="tab" id="tabTasks" onclick="switchTab('tasks')">Tasks</button>
+    <div class="spacer"></div>
+    <button class="hbtn" onclick="showAddDialog()" title="追加">＋</button>
+    <button class="hbtn" onclick="refresh()" title="更新">↻</button>
+    <button class="hbtn" onclick="showSettings()" title="設定">⚙</button>
+  </div>
+
+  <div class="list-area" id="listArea"></div>
+  <div class="status" id="statusText"></div>
+
+  <div class="settings-area" id="settingsArea">
+    <label>GAS URL</label>
+    <input id="gasUrlInput" placeholder="https://script.google.com/macros/s/...">
+    <label>PWA URL</label>
+    <input id="pwaUrlInput" placeholder="https://memotan.github.io/NeoNoting/">
+    <button class="settings-save" onclick="saveSettings()">保存</button>
+    <button class="btn-cancel" onclick="hideSettings()" style="text-align:center;padding:8px">戻る</button>
+  </div>
+
+  <div class="overlay" id="overlay">
+    <div class="dialog">
+      <h3 id="dialogTitle">タスクを追加</h3>
+      <input id="dialogInput" placeholder="タスク名" onkeydown="if(event.key==='Enter')submitDialog()">
+      <textarea id="dialogMemoBody" placeholder="メモの内容（改行で行を分割）" style="display:none;width:100%;min-height:120px;margin-top:10px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.6"></textarea>
+      <div id="tagSection" class="tag-section" style="display:none">
+        <div class="tag-section-label">タグ</div>
+        <div class="tag-pills" id="tagPills"></div>
+      </div>
+      <div class="dialog-btns">
+        <button class="btn-cancel" onclick="closeDialog()">キャンセル</button>
+        <button class="btn-ok" onclick="submitDialog()">追加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const { ipcRenderer } = require('electron');
+
+// Tag colors (matches PWA)
+const TAG_COLORS = {
+  default: { fg: '#888', bg: '#222' },
+  red: { fg: '#ef9a9a', bg: '#3b1010' },
+  pink: { fg: '#f48fb1', bg: '#3b1020' },
+  purple: { fg: '#ce93d8', bg: '#2a1030' },
+  blue: { fg: '#90caf9', bg: '#102040' },
+  green: { fg: '#a5d6a7', bg: '#103010' },
+  yellow: { fg: '#fff59d', bg: '#303010' },
+  orange: { fg: '#ffcc80', bg: '#302010' },
+  brown: { fg: '#bcaaa4', bg: '#2a2020' },
+  gray: { fg: '#bdbdbd', bg: '#282828' }
+};
+
+// State
+let gasUrl = localStorage.getItem('gasUrl') || '';
+let pwaUrl = localStorage.getItem('pwaUrl') || '';
+let currentTab = 'memo';
+let tasks = [];   // [{id, name, order, tags: [{name, color}]}]
+let memos = [];
+let editTaskId = null;
+let editTaskTags = [];  // [{name, color}] for current edit
+
+// GAS call using fetch (handles redirects properly)
+async function gasCall(body) {
+  if (!gasUrl) throw new Error('GAS URL未設定');
+  const res = await fetch(gasUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body),
+    redirect: 'follow'
+  });
+  const text = await res.text();
+  try {
+    const json = JSON.parse(text);
+    if (!json.ok) throw new Error(json.error || 'Unknown error');
+    return json.data;
+  } catch (e) { throw new Error('Invalid response: ' + text.substring(0, 50)); }
+}
+
+// Tab switch
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tabMemo').classList.toggle('active', tab === 'memo');
+  document.getElementById('tabTasks').classList.toggle('active', tab === 'tasks');
+  renderList();
+}
+
+// Render
+function renderList() {
+  const area = document.getElementById('listArea');
+  if (currentTab === 'tasks') {
+    if (tasks.length === 0) {
+      area.innerHTML = '<div class="empty">タスクなし</div>';
+      return;
+    }
+    area.innerHTML = tasks.map(t => `
+      <div class="task-item">
+        <div class="task-check" onclick="event.stopPropagation();completeTask('${t.id}')" title="完了"></div>
+        <div class="task-info" onclick="editTask('${t.id}')">
+          <div class="task-name">${esc(t.name)}</div>
+          ${t.tags.length ? '<div class="task-tags">' + t.tags.map(tg => {
+            const c = TAG_COLORS[tg.color] || TAG_COLORS.default;
+            return `<span class="task-tag" style="color:${c.fg};background:${c.bg}">${esc(tg.name)}</span>`;
+          }).join('') + '</div>' : ''}
+        </div>
+      </div>
+    `).join('');
+  } else {
+    if (memos.length === 0) {
+      area.innerHTML = '<div class="empty">メモなし</div>';
+      return;
+    }
+    area.innerHTML = memos.map(m => `
+      <div class="memo-item" onclick="openMemo('${m.id}')">
+        <span class="memo-icon">📝</span>
+        <div class="memo-name">${esc(m.name)}</div>
+      </div>
+    `).join('');
+  }
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function escAttr(s) { return s.replace(/'/g, "\\'").replace(/\\/g, "\\\\"); }
+
+// Actions
+async function refresh() {
+  setStatus('更新中...');
+  try {
+    if (currentTab === 'tasks' || tasks.length === 0) {
+      const data = await gasCall({ action: 'list' });
+      tasks = data.filter(t => !t.done).map(t => ({
+        id: t.id, name: t.name, order: t.order || 0,
+        tags: (t.tags || []).map(tg => typeof tg === 'string' ? { name: tg, color: 'default' } : { name: tg.name, color: tg.color || 'default' })
+      })).sort((a,b) => a.order - b.order);
+    }
+    if (currentTab === 'memo' || memos.length === 0) {
+      const data = await gasCall({ action: 'memo_list' });
+      memos = data.map(m => ({ id: m.id, name: m.name }));
+    }
+    renderList();
+    setStatus('');
+  } catch (e) {
+    setStatus('エラー: ' + e.message);
+  }
+}
+
+async function completeTask(id) {
+  try {
+    await gasCall({ action: 'update', id, props: { done: true } });
+    tasks = tasks.filter(t => t.id !== id);
+    renderList();
+  } catch (e) { setStatus('完了失敗: ' + e.message); }
+}
+
+function editTask(id) {
+  const task = tasks.find(t => t.id === id);
+  if (!task) return;
+  editTaskId = id;
+  editTaskTags = task.tags.map(tg => ({ ...tg }));
+  document.getElementById('dialogTitle').textContent = 'タスクを編集';
+  document.getElementById('dialogInput').value = task.name;
+  document.querySelector('.btn-ok').textContent = '保存';
+  renderTagPills();
+  document.getElementById('tagSection').style.display = '';
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('dialogInput').focus();
+}
+
+function showAddDialog() {
+  editTaskId = null;
+  editTaskTags = [];
+  const isMemo = currentTab === 'memo';
+  document.getElementById('dialogTitle').textContent = isMemo ? 'メモを追加' : 'タスクを追加';
+  document.getElementById('dialogInput').value = '';
+  document.getElementById('dialogInput').placeholder = isMemo ? 'メモの題名' : 'タスク名';
+  document.getElementById('dialogMemoBody').value = '';
+  document.getElementById('dialogMemoBody').style.display = isMemo ? '' : 'none';
+  document.querySelector('.btn-ok').textContent = '追加';
+  document.getElementById('tagSection').style.display = 'none';
+  document.getElementById('overlay').classList.add('active');
+  document.getElementById('dialogInput').focus();
+}
+
+function closeDialog() {
+  document.getElementById('overlay').classList.remove('active');
+  editTaskId = null;
+  editTaskTags = [];
+}
+
+// Collect all unique tag names from tasks
+function getAllTags() {
+  const map = new Map();
+  tasks.forEach(t => t.tags.forEach(tg => { if (!map.has(tg.name)) map.set(tg.name, tg.color); }));
+  return Array.from(map.entries()).map(([name, color]) => ({ name, color }));
+}
+
+function renderTagPills() {
+  const allTags = getAllTags();
+  const container = document.getElementById('tagPills');
+  if (allTags.length === 0) {
+    container.innerHTML = '<span style="font-size:11px;color:var(--text3)">タグなし</span>';
+    return;
+  }
+  container.innerHTML = allTags.map(tg => {
+    const selected = editTaskTags.some(et => et.name === tg.name);
+    const c = TAG_COLORS[tg.color] || TAG_COLORS.default;
+    const style = selected
+      ? `color:${c.fg};background:${c.bg}`
+      : `color:var(--text3);background:transparent`;
+    return `<div class="tag-pill${selected ? ' selected' : ''}" style="${style}" onclick="toggleTag('${escAttr(tg.name)}','${tg.color}')">${esc(tg.name)}</div>`;
+  }).join('');
+}
+
+function toggleTag(name, color) {
+  const idx = editTaskTags.findIndex(t => t.name === name);
+  if (idx >= 0) editTaskTags.splice(idx, 1);
+  else editTaskTags.push({ name, color });
+  renderTagPills();
+}
+
+async function submitDialog() {
+  const name = document.getElementById('dialogInput').value.trim();
+  if (!name) return;
+  const isMemoAdd = !editTaskId && currentTab === 'memo';
+  closeDialog();
+  try {
+    if (isMemoAdd) {
+      const body = document.getElementById('dialogMemoBody').value;
+      const lines = body.split('\n').filter(l => l.trim()).map(l => ({ type: 'text', text: l }));
+      if (!lines.length) lines.push({ type: 'text', text: '' });
+      await gasCall({ action: 'memo_create', memo: { title: name, lines } });
+      await refresh();
+      setStatus('メモを追加しました');
+    } else if (editTaskId) {
+      const tags = editTaskTags.map(tg => ({ name: tg.name, color: tg.color }));
+      await gasCall({ action: 'update', id: editTaskId, props: { name, tags } });
+      const t = tasks.find(t => t.id === editTaskId);
+      if (t) { t.name = name; t.tags = tags; }
+      renderList();
+      setStatus('更新しました');
+    } else {
+      await gasCall({ action: 'create', task: { name, done: false, tags: [], order: 0 } });
+      await refresh();
+      setStatus('追加しました');
+    }
+  } catch (e) { setStatus('エラー: ' + e.message); }
+  setTimeout(() => setStatus(''), 2000);
+}
+
+function openMemo(id) {
+  if (!pwaUrl) { setStatus('PWA URLを設定してください'); return; }
+  const base = pwaUrl.endsWith('/') ? pwaUrl : pwaUrl + '/';
+  const url = base + '?_t=' + Date.now() + '#memo=' + id;
+  ipcRenderer.send('open-url', url);
+}
+
+// Settings
+function showSettings() {
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('listArea').style.display = 'none';
+  document.getElementById('statusText').style.display = 'none';
+  document.getElementById('settingsArea').classList.add('active');
+  document.getElementById('gasUrlInput').value = gasUrl;
+  document.getElementById('pwaUrlInput').value = pwaUrl;
+}
+
+function hideSettings() {
+  document.getElementById('mainHeader').style.display = '';
+  document.getElementById('listArea').style.display = '';
+  document.getElementById('statusText').style.display = '';
+  document.getElementById('settingsArea').classList.remove('active');
+}
+
+function saveSettings() {
+  gasUrl = document.getElementById('gasUrlInput').value.trim();
+  pwaUrl = document.getElementById('pwaUrlInput').value.trim();
+  localStorage.setItem('gasUrl', gasUrl);
+  localStorage.setItem('pwaUrl', pwaUrl);
+  hideSettings();
+  refresh();
+}
+
+function setStatus(msg) {
+  document.getElementById('statusText').textContent = msg;
+}
+
+// Init
+window.addEventListener('DOMContentLoaded', () => {
+  if (!gasUrl) {
+    showSettings();
+  } else {
+    refresh();
+  }
+});
+</script>
+</body>
+</html>
