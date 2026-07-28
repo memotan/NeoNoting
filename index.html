@@ -277,6 +277,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <button class="memo-tool" onclick="addLine('numbered')">1.2.</button>
       <button class="memo-tool" onclick="addLine('bullet')">・</button>
       <button class="memo-tool" onclick="addLine('counter')">±</button>
+      <button class="memo-tool" onclick="wrapBold()" style="font-weight:700">B</button>
       <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red);flex-shrink:0">保存</button>
     </div>
     <div class="memo-lines" id="memoLines"></div>
@@ -935,15 +936,15 @@ function renderMemoList() {
       let numCount = 0;
       previewHtml = m.lines.map(l => {
         if (l.type === 'counter') {
-          return `<span style="color:var(--text2)">${escHtml(l.text||'カウンター')}: ${l.value||0}</span><br>`;
+          return `<span style="color:var(--text2)">${renderInline(l.text||'カウンター')}: ${l.value||0}</span><br>`;
         }
         if (!l.text) return '';
         if (l.type === 'numbered') {
           numCount++;
-          return `<span class="pv-num">${numCount}. </span>${escHtml(l.text)}<br>`;
+          return `<span class="pv-num">${numCount}. </span>${renderInline(l.text)}<br>`;
         }
-        if (l.type === 'bullet') return `• ${escHtml(l.text)}<br>`;
-        return escHtml(l.text) + '<br>';
+        if (l.type === 'bullet') return `• ${renderInline(l.text)}<br>`;
+        return renderInline(l.text) + '<br>';
       }).join('');
     }
 
@@ -1070,6 +1071,26 @@ function setupMemoDragTouch(card) {
 
 function escHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function renderInline(s) {
+  return escHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+}
+function wrapBold() {
+  const ta = document.querySelector('.memo-line-inp:focus');
+  if (!ta) return;
+  const start = ta.selectionStart, end = ta.selectionEnd;
+  const val = ta.value;
+  if (start === end) return;
+  const sel = val.slice(start, end);
+  const wrapped = sel.startsWith('**') && sel.endsWith('**')
+    ? sel.slice(2, -2)
+    : '**' + sel + '**';
+  ta.value = val.slice(0, start) + wrapped + val.slice(end);
+  const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(ta);
+  if (idx >= 0 && memoLines[idx]) memoLines[idx].text = ta.value;
+  ta.focus();
+  const newEnd = start + wrapped.length;
+  ta.setSelectionRange(newEnd, newEnd);
 }
 
 function newMemo() {
