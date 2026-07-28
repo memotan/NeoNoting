@@ -1,0 +1,20 @@
+{
+  "name": "neonoting-app",
+  "version": "1.0.0",
+  "description": "NeoNoting - Notion連携タスク&メモアプリ",
+  "scripts": {
+    "sync": "cap sync",
+    "open": "cap open android",
+    "build": "cap sync && cap open android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/app": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
