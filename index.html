@@ -119,6 +119,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .s-note{font-size:12px;color:var(--text4);line-height:1.6;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
 
 .empty-state{text-align:center;color:var(--text4);font-size:14px;padding:48px 0}
+.app-version{text-align:center;color:var(--text4);font-size:11px;padding:10px 0 4px}
 
 .tag-colors{margin-top:16px}
 .tag-colors h3{font-size:13px;color:var(--text2);margin-bottom:10px}
@@ -199,8 +200,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .memo-line-row{display:flex;align-items:flex-start;gap:8px}
 .memo-line-num{color:var(--red);font-size:14px;font-weight:500;padding-top:10px;min-width:28px;text-align:right;flex-shrink:0;line-height:1.5}
 .memo-line-bullet{color:var(--text3);padding-top:10px;min-width:28px;text-align:center;flex-shrink:0;line-height:1.5}
-.memo-line-inp{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 4px;line-height:1.5;resize:none;min-height:38px;transition:border-color .15s}
+.memo-line-inp{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:15px;font-family:inherit;outline:none;padding:8px 4px;line-height:1.5;min-height:38px;transition:border-color .15s;white-space:pre-wrap;word-break:break-word}
 .memo-line-inp:focus{border-bottom-color:var(--border)}
+.memo-line-inp:empty:before{content:attr(data-placeholder);color:var(--text4);pointer-events:none}
+.memo-line-inp strong{font-weight:700}
 .memo-line-del{display:none}
 .memo-line-bullet-dot{color:var(--text2);padding-top:10px;min-width:28px;text-align:center;flex-shrink:0;line-height:1.5;font-size:18px}
 .memo-counter-row{display:flex;align-items:center;gap:0;background:var(--surface2);border-radius:12px;padding:4px 8px;margin:4px 0}
@@ -233,6 +236,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <!-- メモ一覧 -->
     <div id="memoListArea" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px">
       <div class="memo-grid" id="memoList"></div>
+      <div class="app-version">v2026.07.29</div>
       <div class="memo-fab-row">
         <button class="memo-create-btn" onclick="newMemo()">CREATE A NOTE</button>
         <button class="memo-icon-btn" onclick="syncMemos()" aria-label="同期"><i class="ti ti-refresh" aria-hidden="true"></i></button>
@@ -263,6 +267,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         <span class="sdot" id="syncDot"></span>
         <span class="smsg" id="syncMsg">未接続 — 設定からGAS URLを入力してください</span>
       </div>
+      <div class="app-version">v2026.07.29</div>
     </div>
   </div>
 
@@ -285,6 +290,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <span class="sdot" id="memoSyncDot"></span>
       <span style="font-size:12px;color:var(--text3)" id="memoSyncMsg"></span>
     </div>
+    <div class="app-version">v2026.07.29</div>
   </div>
 
   <div class="settings-screen" id="settingsScreen">
@@ -306,7 +312,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         このURLはこのデバイスのlocalStorageにのみ保存されます。<br>
         NotionのトークンはGASのコード内に記述するため、ブラウザには送信されません。
       </div>
-      <div class="s-note" style="border-top:none;margin-top:8px;padding-top:0;text-align:center">v2026.07.29</div>
+      <div class="app-version">v2026.07.29</div>
     </div>
   </div>
 
@@ -1076,21 +1082,47 @@ function escHtml(s) {
 function renderInline(s) {
   return escHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
+// contenteditable の DOM（<strong>タグ含む）を **マークダウン記法の生テキストに変換
+function domToRaw(el) {
+  let out = '';
+  el.childNodes.forEach(node => {
+    if (node.nodeType === 3) out += node.textContent;
+    else if (node.nodeType === 1) {
+      if (node.tagName === 'STRONG' || node.tagName === 'B') out += '**' + domToRaw(node) + '**';
+      else if (node.tagName === 'BR') out += '';
+      else out += domToRaw(node);
+    }
+  });
+  return out;
+}
 function wrapBold() {
-  const ta = document.activeElement;
-  if (!ta || !ta.classList.contains('memo-line-inp')) return;
-  const start = ta.selectionStart, end = ta.selectionEnd;
-  if (start === end) return;
-  const val = ta.value;
-  const sel = val.slice(start, end);
-  const wrapped = sel.startsWith('**') && sel.endsWith('**')
-    ? sel.slice(2, -2)
-    : '**' + sel + '**';
-  ta.value = val.slice(0, start) + wrapped + val.slice(end);
-  const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(ta);
-  if (idx >= 0 && memoLines[idx]) memoLines[idx].text = ta.value;
-  const newEnd = start + wrapped.length;
-  ta.setSelectionRange(newEnd, newEnd);
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+  const range = sel.getRangeAt(0);
+  let container = range.commonAncestorContainer;
+  if (container.nodeType === 3) container = container.parentNode;
+  const lineEl = container.closest && container.closest('.memo-line-inp');
+  if (!lineEl) return;
+
+  const strongAncestor = container.closest('strong');
+  if (strongAncestor && lineEl.contains(strongAncestor)) {
+    const parent = strongAncestor.parentNode;
+    while (strongAncestor.firstChild) parent.insertBefore(strongAncestor.firstChild, strongAncestor);
+    parent.removeChild(strongAncestor);
+  } else {
+    const frag = range.extractContents();
+    const strong = document.createElement('strong');
+    strong.appendChild(frag);
+    range.insertNode(strong);
+    const newRange = document.createRange();
+    newRange.selectNodeContents(strong);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+  }
+  lineEl.normalize();
+
+  const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(lineEl);
+  if (idx >= 0 && memoLines[idx]) memoLines[idx].text = domToRaw(lineEl);
 }
 
 function newMemo() {
@@ -1173,26 +1205,27 @@ function renderMemoLines() {
       } else {
         prefix = `<span class="memo-line-bullet"></span>`;
       }
+      const ph = line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : 'テキスト';
       row.innerHTML = `
         ${prefix}
-        <textarea class="memo-line-inp" rows="1" placeholder="${line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : 'テキスト'}">${escHtml(line.text || '')}</textarea>
+        <div class="memo-line-inp" contenteditable="true" data-placeholder="${ph}">${renderInline(line.text || '')}</div>
         <button class="memo-line-del" aria-label="削除"></button>`;
-      const ta = row.querySelector('textarea');
+      const ta = row.querySelector('.memo-line-inp');
       ta.addEventListener('input', () => {
-        memoLines[i].text = ta.value;
-        ta.style.height = 'auto';
-        ta.style.height = ta.scrollHeight + 'px';
+        memoLines[i].text = domToRaw(ta);
       });
       ta.addEventListener('focus', () => { focusedLineIndex = i; });
       ta.addEventListener('keydown', ev => {
+        if (ev.isComposing || ev.keyCode === 229) return;
         if (ev.key === 'Enter' && !ev.shiftKey) {
           ev.preventDefault();
+          memoLines[i].text = domToRaw(ta);
           memoLines.splice(i + 1, 0, { type: line.type, text: '', value: line.type === 'counter' ? 0 : undefined });
           renderMemoLines();
           const rows = document.querySelectorAll('.memo-line-inp');
           if (rows[i + 1]) rows[i + 1].focus();
         }
-        if (ev.key === 'Backspace' && ta.value === '' && memoLines.length > 1) {
+        if (ev.key === 'Backspace' && ta.textContent === '' && memoLines.length > 1) {
           ev.preventDefault();
           memoLines.splice(i, 1);
           renderMemoLines();
@@ -1200,7 +1233,6 @@ function renderMemoLines() {
           if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
         }
       });
-      setTimeout(() => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; }, 0);
     }
     container.appendChild(row);
   });
@@ -1232,7 +1264,7 @@ function addLine(type) {
   renderMemoLines();
   focusedLineIndex = insertAt;
   const row = document.getElementById('memoLines').children[insertAt];
-  const focusEl = row && row.querySelector('textarea, .memo-counter-label');
+  const focusEl = row && row.querySelector('.memo-line-inp, .memo-counter-label');
   if (focusEl) focusEl.focus();
 }
 
@@ -1248,7 +1280,7 @@ async function saveMemo() {
     // memo-line-inpのインデックスとmemoLinesのインデックスが対応しない場合があるので
     // data-index属性で管理する代わりに、counter以外の行を順番に対応させる
     const textLines = memoLines.map((l,i) => ({l,i})).filter(({l}) => l.type !== 'counter');
-    if (textLines[idx]) memoLines[textLines[idx].i].text = ta.value;
+    if (textLines[idx]) memoLines[textLines[idx].i].text = domToRaw(ta);
   });
   const title = document.getElementById('memoTitleInp').value.trim() || '無題';
   const lines = memoLines.filter(l => l.type === 'counter' || (l.text && l.text.trim() !== ''));
