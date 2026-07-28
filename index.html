@@ -277,7 +277,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <button class="memo-tool" onclick="addLine('numbered')">1.2.</button>
       <button class="memo-tool" onclick="addLine('bullet')">・</button>
       <button class="memo-tool" onclick="addLine('counter')">±</button>
-      <button class="memo-tool" onclick="wrapBold()" style="font-weight:700">B</button>
+      <button class="memo-tool" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="wrapBold()" style="font-weight:700">B</button>
       <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red);flex-shrink:0">保存</button>
     </div>
     <div class="memo-lines" id="memoLines"></div>
@@ -306,6 +306,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         このURLはこのデバイスのlocalStorageにのみ保存されます。<br>
         NotionのトークンはGASのコード内に記述するため、ブラウザには送信されません。
       </div>
+      <div class="s-note" style="border-top:none;margin-top:8px;padding-top:0;text-align:center">v2026.07.29</div>
     </div>
   </div>
 
@@ -1076,11 +1077,11 @@ function renderInline(s) {
   return escHtml(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
 function wrapBold() {
-  const ta = document.querySelector('.memo-line-inp:focus');
-  if (!ta) return;
+  const ta = document.activeElement;
+  if (!ta || !ta.classList.contains('memo-line-inp')) return;
   const start = ta.selectionStart, end = ta.selectionEnd;
-  const val = ta.value;
   if (start === end) return;
+  const val = ta.value;
   const sel = val.slice(start, end);
   const wrapped = sel.startsWith('**') && sel.endsWith('**')
     ? sel.slice(2, -2)
@@ -1088,7 +1089,6 @@ function wrapBold() {
   ta.value = val.slice(0, start) + wrapped + val.slice(end);
   const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(ta);
   if (idx >= 0 && memoLines[idx]) memoLines[idx].text = ta.value;
-  ta.focus();
   const newEnd = start + wrapped.length;
   ta.setSelectionRange(newEnd, newEnd);
 }
