@@ -357,7 +357,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v3';
+const APP_VERSION = 'v4';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -383,6 +383,7 @@ let touchDragEl = null, touchClone = null, touchOffX = 0, touchOffY = 0;
 // メモ
 let memos = [];
 let currentMemoId = null;
+let memoDirty = false;
 let memoLines = []; // [{type:'text'|'numbered', text:''}]
 let focusedLineIndex = null;
 let currentTab = 'tasks';
@@ -901,6 +902,13 @@ function setMemoSyncState(state, msg) {
   if (dot) { dot.className = 'sdot ' + state; document.getElementById('memoSyncMsg').textContent = msg; }
 }
 
+function markMemoDirty() {
+  memoDirty = true;
+  setMemoSyncState('', '編集中...');
+}
+
+document.getElementById('memoTitleInp').addEventListener('input', markMemoDirty);
+
 async function syncMemos() {
   if (!gasUrl) return;
   try {
@@ -1133,12 +1141,14 @@ function wrapBold() {
 
   const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(lineEl);
   if (idx >= 0 && memoLines[idx]) memoLines[idx].text = domToRaw(lineEl);
+  markMemoDirty();
 }
 
 function newMemo() {
   currentMemoId = null;
   memoLines = [{ type: 'text', text: '' }];
   focusedLineIndex = null;
+  memoDirty = false;
   document.getElementById('memoTitleInp').value = '';
   renderMemoLines();
   showMemoEdit();
@@ -1156,11 +1166,13 @@ async function openMemoEdit(id) {
     document.getElementById('memoTitleInp').value = data.name === '無題' ? '' : data.name;
     memoLines = (data.lines && data.lines.length) ? data.lines : [{ type: 'text', text: '' }];
     renderMemoLines();
+    memoDirty = false;
     setMemoSyncState('ok', '読み込み済み');
   } catch(e) {
     // 本文なしでも開けるようフォールバック
     memoLines = [{ type: 'text', text: '' }];
     renderMemoLines();
+    memoDirty = false;
     setMemoSyncState('err', '読み込み失敗: ' + e.message);
   }
 }
@@ -1202,6 +1214,7 @@ function renderMemoLines() {
       const counterLabel = row.querySelector('.memo-counter-label');
       counterLabel.addEventListener('input', ev => {
         memoLines[i].text = ev.target.value;
+        markMemoDirty();
       });
       counterLabel.addEventListener('focus', () => { focusedLineIndex = i; });
     } else {
@@ -1226,12 +1239,14 @@ function renderMemoLines() {
       if (line.type === 'checklist') {
         row.querySelector('.memo-line-check').addEventListener('click', () => {
           memoLines[i].checked = !memoLines[i].checked;
+          markMemoDirty();
           renderMemoLines();
         });
       }
       const ta = row.querySelector('.memo-line-inp');
       ta.addEventListener('input', () => {
         memoLines[i].text = domToRaw(ta);
+        markMemoDirty();
       });
       ta.addEventListener('focus', () => { focusedLineIndex = i; });
       ta.addEventListener('keydown', ev => {
@@ -1240,6 +1255,7 @@ function renderMemoLines() {
           ev.preventDefault();
           memoLines[i].text = domToRaw(ta);
           memoLines.splice(i + 1, 0, { type: line.type, text: '', value: line.type === 'counter' ? 0 : undefined, checked: line.type === 'checklist' ? false : undefined });
+          markMemoDirty();
           renderMemoLines();
           const rows = document.querySelectorAll('.memo-line-inp');
           if (rows[i + 1]) rows[i + 1].focus();
@@ -1247,6 +1263,7 @@ function renderMemoLines() {
         if (ev.key === 'Backspace' && ta.textContent === '' && memoLines.length > 1) {
           ev.preventDefault();
           memoLines.splice(i, 1);
+          markMemoDirty();
           renderMemoLines();
           const rows = document.querySelectorAll('.memo-line-inp');
           if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
@@ -1271,6 +1288,7 @@ function renderMemoLines() {
 function changeCount(i, delta) {
   if (memoLines[i].value === undefined) memoLines[i].value = 0;
   memoLines[i].value += delta;
+  markMemoDirty();
   renderMemoLines();
 }
 
@@ -1282,6 +1300,7 @@ function addLine(type) {
     ? focusedLineIndex + 1
     : memoLines.length;
   memoLines.splice(insertAt, 0, newLine);
+  markMemoDirty();
   renderMemoLines();
   focusedLineIndex = insertAt;
   const row = document.getElementById('memoLines').children[insertAt];
@@ -1314,6 +1333,7 @@ async function saveMemo() {
       const created = await gasCall({ action: 'memo_create', memo: { title, lines: saveLines } });
       currentMemoId = created.id;
     }
+    memoDirty = false;
     setMemoSyncState('ok', '保存済み');
     showToast('保存しました');
   } catch(e) {
