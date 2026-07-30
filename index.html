@@ -240,7 +240,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <!-- メモ一覧 -->
     <div id="memoListArea" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px">
       <div class="memo-grid" id="memoList"></div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
       <div class="memo-fab-row">
         <button class="memo-create-btn" onclick="newMemo()">CREATE A NOTE</button>
         <button class="memo-icon-btn" onclick="syncMemos()" aria-label="同期"><i class="ti ti-refresh" aria-hidden="true"></i></button>
@@ -271,7 +271,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         <span class="sdot" id="syncDot"></span>
         <span class="smsg" id="syncMsg">未接続 — 設定からGAS URLを入力してください</span>
       </div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
     </div>
   </div>
 
@@ -295,7 +295,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <span class="sdot" id="memoSyncDot"></span>
       <span style="font-size:12px;color:var(--text3)" id="memoSyncMsg"></span>
     </div>
-    <div class="app-version">v1</div>
+    <div class="app-version"></div>
   </div>
 
   <div class="settings-screen" id="settingsScreen">
@@ -317,7 +317,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         このURLはこのデバイスのlocalStorageにのみ保存されます。<br>
         NotionのトークンはGASのコード内に記述するため、ブラウザには送信されません。
       </div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
     </div>
   </div>
 
@@ -358,6 +358,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
+const APP_VERSION = 'v2';
+document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
+
 const TAG_COLORS = {
   default:{fg:'#888',bg:'#222'},
   red:{fg:'#ef9a9a',bg:'#3b1010'},
