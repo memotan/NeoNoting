@@ -3,6 +3,7 @@
   "appName": "NeoNoting",
   "webDir": "www",
   "server": {
+    "url": "https://memotan.github.io/NeoNoting/",
     "androidScheme": "https"
   },
   "plugins": {

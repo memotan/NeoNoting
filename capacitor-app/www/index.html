@@ -174,8 +174,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .memo-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-all}
 .memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
 .memo-card-preview .pv-num{color:var(--text2)}
-.memo-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:transparent;font-size:14px;cursor:pointer;padding:4px;transition:color .15s;line-height:1}
-.memo-card:hover .memo-card-del,.memo-card:focus-within .memo-card-del{color:var(--text4)}
+.memo-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text4);font-size:14px;cursor:pointer;padding:4px;transition:color .15s;line-height:1}
 .memo-card-del:active{color:var(--red) !important}
 .memo-fab-row{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;padding:12px 16px;padding-bottom:calc(12px + var(--safe-bottom));display:flex;gap:10px;align-items:center;background:linear-gradient(transparent,var(--bg) 40%);z-index:50}
 .memo-create-btn{flex:1;padding:10px 14px;border-radius:22px;background:var(--red);border:none;color:#fff;font-size:14px;font-weight:400;cursor:pointer;font-family:inherit;letter-spacing:.01em;transition:background .15s}
@@ -206,6 +205,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .memo-line-inp strong{font-weight:700}
 .memo-line-del{display:none}
 .memo-line-bullet-dot{color:var(--text2);padding-top:10px;min-width:28px;text-align:center;flex-shrink:0;line-height:1.5;font-size:18px}
+.memo-line-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--text4);background:transparent;cursor:pointer;flex-shrink:0;margin-top:9px;display:flex;align-items:center;justify-content:center;padding:0;transition:all .15s}
+.memo-line-check.checked{background:var(--text4);border-color:var(--text4)}
+.memo-line-check.checked::after{content:'';width:5px;height:9px;border:2px solid var(--text2);border-top:none;border-left:none;transform:rotate(45deg) translate(-1px,-1px)}
+.memo-line-inp.checked{color:var(--text3);text-decoration:line-through}
 .memo-counter-row{display:flex;align-items:center;gap:0;background:var(--surface2);border-radius:12px;padding:4px 8px;margin:4px 0}
 .memo-counter-label{flex:1;font-size:15px;color:var(--text);padding:4px 8px;background:transparent;border:none;font-family:inherit;outline:none;min-width:0}
 .memo-counter-label::placeholder{color:var(--text4)}
@@ -222,7 +225,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 
   <div id="mainScreen" style="display:flex;flex-direction:column;height:100%">
     <div class="header">
-      <h1>Notes</h1>
+      <h1>NeoNoting</h1>
       <div class="hicons">
         <i class="ti ti-refresh" id="refreshBtn" aria-label="同期" onclick="syncFromNotion()"></i>
         <i class="ti ti-settings" aria-label="設定" onclick="showSettings()"></i>
@@ -236,7 +239,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <!-- メモ一覧 -->
     <div id="memoListArea" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px">
       <div class="memo-grid" id="memoList"></div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
       <div class="memo-fab-row">
         <button class="memo-create-btn" onclick="newMemo()">CREATE A NOTE</button>
         <button class="memo-icon-btn" onclick="syncMemos()" aria-label="同期"><i class="ti ti-refresh" aria-hidden="true"></i></button>
@@ -267,7 +270,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         <span class="sdot" id="syncDot"></span>
         <span class="smsg" id="syncMsg">未接続 — 設定からGAS URLを入力してください</span>
       </div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
     </div>
   </div>
 
@@ -282,6 +285,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <button class="memo-tool" onclick="addLine('numbered')">1.2.</button>
       <button class="memo-tool" onclick="addLine('bullet')">・</button>
       <button class="memo-tool" onclick="addLine('counter')">±</button>
+      <button class="memo-tool" onclick="addLine('checklist')">☑</button>
       <button class="memo-tool" onmousedown="event.preventDefault()" ontouchstart="event.preventDefault()" onclick="wrapBold()" style="font-weight:700">B</button>
       <button class="memo-tool" onclick="saveMemo()" style="margin-left:auto;border-color:var(--red);color:var(--red);flex-shrink:0">保存</button>
     </div>
@@ -290,7 +294,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <span class="sdot" id="memoSyncDot"></span>
       <span style="font-size:12px;color:var(--text3)" id="memoSyncMsg"></span>
     </div>
-    <div class="app-version">v1</div>
+    <div class="app-version"></div>
   </div>
 
   <div class="settings-screen" id="settingsScreen">
@@ -312,7 +316,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
         このURLはこのデバイスのlocalStorageにのみ保存されます。<br>
         NotionのトークンはGASのコード内に記述するため、ブラウザには送信されません。
       </div>
-      <div class="app-version">v1</div>
+      <div class="app-version"></div>
     </div>
   </div>
 
@@ -353,6 +357,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
+const APP_VERSION = 'v4';
+document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
+
 const TAG_COLORS = {
   default:{fg:'#888',bg:'#222'},
   red:{fg:'#ef9a9a',bg:'#3b1010'},
@@ -376,6 +383,7 @@ let touchDragEl = null, touchClone = null, touchOffX = 0, touchOffY = 0;
 // メモ
 let memos = [];
 let currentMemoId = null;
+let memoDirty = false;
 let memoLines = []; // [{type:'text'|'numbered', text:''}]
 let focusedLineIndex = null;
 let currentTab = 'tasks';
@@ -894,6 +902,13 @@ function setMemoSyncState(state, msg) {
   if (dot) { dot.className = 'sdot ' + state; document.getElementById('memoSyncMsg').textContent = msg; }
 }
 
+function markMemoDirty() {
+  memoDirty = true;
+  setMemoSyncState('', '編集中...');
+}
+
+document.getElementById('memoTitleInp').addEventListener('input', markMemoDirty);
+
 async function syncMemos() {
   if (!gasUrl) return;
   try {
@@ -951,6 +966,9 @@ function renderMemoList() {
           return `<span class="pv-num">${numCount}. </span>${renderInline(l.text)}<br>`;
         }
         if (l.type === 'bullet') return `• ${renderInline(l.text)}<br>`;
+        if (l.type === 'checklist') {
+          return `<span style="${l.checked ? 'text-decoration:line-through;color:var(--text4)' : ''}">${l.checked ? '☑' : '☐'} ${renderInline(l.text)}</span><br>`;
+        }
         return renderInline(l.text) + '<br>';
       }).join('');
     }
@@ -1123,12 +1141,14 @@ function wrapBold() {
 
   const idx = Array.from(document.querySelectorAll('.memo-line-inp')).indexOf(lineEl);
   if (idx >= 0 && memoLines[idx]) memoLines[idx].text = domToRaw(lineEl);
+  markMemoDirty();
 }
 
 function newMemo() {
   currentMemoId = null;
   memoLines = [{ type: 'text', text: '' }];
   focusedLineIndex = null;
+  memoDirty = false;
   document.getElementById('memoTitleInp').value = '';
   renderMemoLines();
   showMemoEdit();
@@ -1146,11 +1166,13 @@ async function openMemoEdit(id) {
     document.getElementById('memoTitleInp').value = data.name === '無題' ? '' : data.name;
     memoLines = (data.lines && data.lines.length) ? data.lines : [{ type: 'text', text: '' }];
     renderMemoLines();
+    memoDirty = false;
     setMemoSyncState('ok', '読み込み済み');
   } catch(e) {
     // 本文なしでも開けるようフォールバック
     memoLines = [{ type: 'text', text: '' }];
     renderMemoLines();
+    memoDirty = false;
     setMemoSyncState('err', '読み込み失敗: ' + e.message);
   }
 }
@@ -1192,27 +1214,39 @@ function renderMemoLines() {
       const counterLabel = row.querySelector('.memo-counter-label');
       counterLabel.addEventListener('input', ev => {
         memoLines[i].text = ev.target.value;
+        markMemoDirty();
       });
       counterLabel.addEventListener('focus', () => { focusedLineIndex = i; });
     } else {
       // テキスト・番号付き・ブレット行
       row.className = 'memo-line-row';
       let prefix;
-      if (line.type === 'numbered') {
+      if (line.type === 'checklist') {
+        prefix = `<button class="memo-line-check${line.checked ? ' checked' : ''}" aria-label="${line.checked ? '未完了' : '完了'}"></button>`;
+      } else if (line.type === 'numbered') {
         prefix = `<span class="memo-line-num">${lineNum}.</span>`;
       } else if (line.type === 'bullet') {
         prefix = `<span class="memo-line-bullet-dot">•</span>`;
       } else {
         prefix = `<span class="memo-line-bullet"></span>`;
       }
-      const ph = line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : 'テキスト';
+      const ph = line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : line.type === 'checklist' ? 'チェック項目' : 'テキスト';
+      const checkedCls = line.type === 'checklist' && line.checked ? ' checked' : '';
       row.innerHTML = `
         ${prefix}
-        <div class="memo-line-inp" contenteditable="true" data-placeholder="${ph}">${renderInline(line.text || '')}</div>
+        <div class="memo-line-inp${checkedCls}" contenteditable="true" data-placeholder="${ph}">${renderInline(line.text || '')}</div>
         <button class="memo-line-del" aria-label="削除"></button>`;
+      if (line.type === 'checklist') {
+        row.querySelector('.memo-line-check').addEventListener('click', () => {
+          memoLines[i].checked = !memoLines[i].checked;
+          markMemoDirty();
+          renderMemoLines();
+        });
+      }
       const ta = row.querySelector('.memo-line-inp');
       ta.addEventListener('input', () => {
         memoLines[i].text = domToRaw(ta);
+        markMemoDirty();
       });
       ta.addEventListener('focus', () => { focusedLineIndex = i; });
       ta.addEventListener('keydown', ev => {
@@ -1220,7 +1254,8 @@ function renderMemoLines() {
         if (ev.key === 'Enter' && !ev.shiftKey) {
           ev.preventDefault();
           memoLines[i].text = domToRaw(ta);
-          memoLines.splice(i + 1, 0, { type: line.type, text: '', value: line.type === 'counter' ? 0 : undefined });
+          memoLines.splice(i + 1, 0, { type: line.type, text: '', value: line.type === 'counter' ? 0 : undefined, checked: line.type === 'checklist' ? false : undefined });
+          markMemoDirty();
           renderMemoLines();
           const rows = document.querySelectorAll('.memo-line-inp');
           if (rows[i + 1]) rows[i + 1].focus();
@@ -1228,6 +1263,7 @@ function renderMemoLines() {
         if (ev.key === 'Backspace' && ta.textContent === '' && memoLines.length > 1) {
           ev.preventDefault();
           memoLines.splice(i, 1);
+          markMemoDirty();
           renderMemoLines();
           const rows = document.querySelectorAll('.memo-line-inp');
           if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
@@ -1244,23 +1280,27 @@ function renderMemoLines() {
     <button class="memo-add-line" onclick="addLine('text')">Txt</button>
     <button class="memo-add-line" onclick="addLine('numbered')">1.2.</button>
     <button class="memo-add-line" onclick="addLine('bullet')">・</button>
-    <button class="memo-add-line" onclick="addLine('counter')">±</button>`;
+    <button class="memo-add-line" onclick="addLine('counter')">±</button>
+    <button class="memo-add-line" onclick="addLine('checklist')">☑</button>`;
   container.appendChild(addRow);
 }
 
 function changeCount(i, delta) {
   if (memoLines[i].value === undefined) memoLines[i].value = 0;
   memoLines[i].value += delta;
+  markMemoDirty();
   renderMemoLines();
 }
 
 function addLine(type) {
   const newLine = { type, text: '' };
   if (type === 'counter') newLine.value = 0;
+  if (type === 'checklist') newLine.checked = false;
   const insertAt = (focusedLineIndex != null && focusedLineIndex >= 0 && focusedLineIndex < memoLines.length)
     ? focusedLineIndex + 1
     : memoLines.length;
   memoLines.splice(insertAt, 0, newLine);
+  markMemoDirty();
   renderMemoLines();
   focusedLineIndex = insertAt;
   const row = document.getElementById('memoLines').children[insertAt];
@@ -1293,6 +1333,7 @@ async function saveMemo() {
       const created = await gasCall({ action: 'memo_create', memo: { title, lines: saveLines } });
       currentMemoId = created.id;
     }
+    memoDirty = false;
     setMemoSyncState('ok', '保存済み');
     showToast('保存しました');
   } catch(e) {
