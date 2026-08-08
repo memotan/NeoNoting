@@ -357,7 +357,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v4';
+const APP_VERSION = 'v5';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -1370,6 +1370,14 @@ async function deleteMemo(id) {
 })();
 
 // ========== 初期化 ==========
+async function jumpToMemo(memoId) {
+  if (!memoId || !gasUrl) return;
+  try {
+    switchTab('memo');
+    await openMemoEdit(memoId);
+  } catch(e) { console.error('Deep link error:', e); }
+}
+
 async function handleDeepLink() {
   // Check hash fragment first (#memo=ID), then query params (?memo=ID)
   let memoId = null;
@@ -1382,15 +1390,28 @@ async function handleDeepLink() {
     memoId = params.get('memo');
   }
   if (memoId && gasUrl) {
-    try {
-      switchTab('memo');
-      await openMemoEdit(memoId);
-    } catch(e) { console.error('Deep link error:', e); }
+    await jumpToMemo(memoId);
     history.replaceState(null, '', window.location.pathname);
     return true;
   }
   return false;
 }
+
+// Android/iOSネイティブアプリ（Capacitor）から neonoting://memo?id=... で
+// 起動・復帰した際のディープリンクを受信
+function setupCapacitorDeepLink() {
+  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!App) return;
+  App.addListener('appUrlOpen', (data) => {
+    try {
+      const url = new URL(data.url);
+      const memoId = url.searchParams.get('id');
+      if (memoId) jumpToMemo(memoId);
+    } catch(e) { console.error('appUrlOpen error:', e); }
+  });
+}
+setupCapacitorDeepLink();
+
 if (gasUrl) {
   handleDeepLink().then(handled => {
     if (!handled) syncFromNotion();
