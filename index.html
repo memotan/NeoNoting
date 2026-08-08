@@ -357,7 +357,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v5';
+const APP_VERSION = 'v6';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -1398,17 +1398,27 @@ async function handleDeepLink() {
 }
 
 // Android/iOSネイティブアプリ（Capacitor）から neonoting://memo?id=... で
-// 起動・復帰した際のディープリンクを受信
+// 起動・復帰した際のディープリンクを受信。
+// ビルド工程がないため @capacitor/app のJSブリッジは未バンドル。
+// ネイティブのCapacitorコンテナ内でのみ、そのプラグインスクリプトを動的に読み込む。
 function setupCapacitorDeepLink() {
-  const App = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-  if (!App) return;
-  App.addListener('appUrlOpen', (data) => {
-    try {
-      const url = new URL(data.url);
-      const memoId = url.searchParams.get('id');
-      if (memoId) jumpToMemo(memoId);
-    } catch(e) { console.error('appUrlOpen error:', e); }
-  });
+  if (!window.Capacitor) return;
+  const wireUp = () => {
+    const App = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+    if (!App) return;
+    App.addListener('appUrlOpen', (data) => {
+      try {
+        const url = new URL(data.url);
+        const memoId = url.searchParams.get('id');
+        if (memoId) jumpToMemo(memoId);
+      } catch(e) { console.error('appUrlOpen error:', e); }
+    });
+  };
+  if (window.Capacitor.Plugins && window.Capacitor.Plugins.App) { wireUp(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@capacitor/app@6.0.3/dist/plugin.js';
+  s.onload = wireUp;
+  document.head.appendChild(s);
 }
 setupCapacitorDeepLink();
 
