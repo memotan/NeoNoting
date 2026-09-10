@@ -357,7 +357,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v6';
+const APP_VERSION = 'v7';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -565,7 +565,11 @@ function renderTagBar() {
     return `<button class="tpill${isA ? ' active' : ''}" onclick="setActiveTag('${t}')">${t}</button>`;
   }).join('') + `<button class="tpill tpill-add" onclick="openTagSheet()" aria-label="タグ管理"><i class="ti ti-dots" aria-hidden="true"></i></button>`;
 }
-function setActiveTag(t) { activeTag = (t === 'すべて') ? null : t; renderAll(); }
+function setActiveTag(t) {
+  activeTag = (t === 'すべて') ? null : t;
+  selNewTags = activeTag ? [activeTag] : [];
+  renderAll();
+}
 
 // ===== タグ管理シート =====
 function closeSheets() { closeSheet(); closeTagSheet(); }
