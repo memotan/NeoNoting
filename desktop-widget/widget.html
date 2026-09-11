@@ -145,6 +145,46 @@ html, body {
   padding: 10px; background: var(--red); color: #fff; border: none; border-radius: 8px;
   font-size: 14px; cursor: pointer; font-family: inherit; font-weight: 600; margin-top: 8px;
 }
+
+/* Memo edit view */
+.memo-edit-area{display:none;flex-direction:column;flex:1;overflow:hidden}
+.memo-edit-area.active{display:flex}
+.memo-edit-header{display:flex;align-items:center;gap:6px;padding:0 10px 8px;flex-shrink:0}
+.memo-edit-title-inp{flex:1;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);font-size:14px;font-weight:600;font-family:inherit;outline:none;padding:6px 4px;min-width:0}
+.memo-edit-toolbar{display:flex;gap:4px;padding:0 10px 8px;flex-shrink:0;overflow-x:auto}
+.memo-edit-toolbar::-webkit-scrollbar{display:none}
+.mtool{padding:4px 9px;border-radius:7px;font-size:11px;border:1px solid var(--border);background:transparent;color:var(--text3);cursor:pointer;font-family:inherit;flex-shrink:0;white-space:nowrap}
+.mtool:hover{background:var(--surface2)}
+.memo-edit-lines{flex:1;overflow-y:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:4px}
+.memo-edit-lines::-webkit-scrollbar{width:4px}
+.memo-edit-lines::-webkit-scrollbar-thumb{background:var(--text3);border-radius:2px}
+.mline-row{display:flex;align-items:flex-start;gap:6px}
+.mline-prefix{color:var(--text3);font-size:12px;padding-top:8px;min-width:18px;text-align:right;flex-shrink:0}
+.mline-check{width:16px;height:16px;border:2px solid var(--text3);border-radius:4px;flex-shrink:0;cursor:pointer;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--red)}
+.mline-check.checked{border-color:var(--red);background:var(--red);color:#fff}
+.mline-inp{flex:1;background:transparent;border:none;border-bottom:1px solid transparent;color:var(--text);font-size:13px;font-family:inherit;outline:none;padding:6px 2px;resize:none;line-height:1.5;min-height:26px;overflow:hidden}
+.mline-inp.checked-text{text-decoration:line-through;color:var(--text3)}
+.mline-inp:focus{border-bottom-color:var(--border)}
+.mline-del{background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;padding:6px 2px;flex-shrink:0;opacity:.5}
+.mline-del:hover{opacity:1;color:var(--red)}
+.mline-counter{display:flex;align-items:center;gap:6px;background:var(--surface);border-radius:8px;padding:4px 6px;flex:1}
+.mline-counter input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:inherit;outline:none;padding:4px;min-width:0}
+.mline-counter-btn{width:22px;height:22px;border-radius:6px;border:none;background:var(--surface2);color:var(--text2);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mline-counter-val{font-size:13px;font-weight:600;color:var(--text);min-width:20px;text-align:center}
+
+/* Tag manager view */
+.tagmgr-area{display:none;flex-direction:column;flex:1;overflow:hidden;padding:0 14px}
+.tagmgr-area.active{display:flex}
+.tagmgr-header{display:flex;align-items:center;gap:6px;padding:0 0 10px;flex-shrink:0}
+.tagmgr-title{flex:1;text-align:center;font-size:14px;font-weight:600;color:var(--text)}
+.tagmgr-add-row{display:flex;gap:6px;margin-bottom:10px;flex-shrink:0}
+.tagmgr-add-row input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none}
+.tagmgr-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.tagmgr-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface);border-radius:8px}
+.tagmgr-name{flex:1;font-size:13px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tagmgr-count{font-size:11px;color:var(--text3);margin-left:4px}
+.tagmgr-del{background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:4px}
+.tagmgr-del:hover{color:var(--red)}
 </style>
 </head>
 <body>
@@ -156,6 +196,7 @@ html, body {
     <button class="tab" id="tabTasks" onclick="switchTab('tasks')">Tasks</button>
     <div class="spacer"></div>
     <button class="hbtn" onclick="showAddDialog()" title="追加">＋</button>
+    <button class="hbtn" onclick="openTagManager()" title="タグ管理">🏷</button>
     <button class="hbtn" onclick="refresh()" title="更新">↻</button>
     <button class="hbtn" onclick="showSettings()" title="設定">⚙</button>
   </div>
@@ -170,6 +211,36 @@ html, body {
     <input id="pwaUrlInput" placeholder="https://memotan.github.io/NeoNoting/">
     <button class="settings-save" onclick="saveSettings()">保存</button>
     <button class="btn-cancel" onclick="hideSettings()" style="text-align:center;padding:8px">戻る</button>
+  </div>
+
+  <div class="memo-edit-area" id="memoEditArea">
+    <div class="memo-edit-header">
+      <button class="hbtn" onclick="closeMemoEditor()" title="戻る">←</button>
+      <input class="memo-edit-title-inp" id="memoEditTitle" placeholder="題名">
+      <button class="hbtn" onclick="openMemoInBrowser()" title="ブラウザで開く">🔗</button>
+      <button class="hbtn" onclick="saveMemoEdit()" title="保存">💾</button>
+    </div>
+    <div class="memo-edit-toolbar">
+      <button class="mtool" onclick="addMemoLine('text')">Txt</button>
+      <button class="mtool" onclick="addMemoLine('numbered')">1.2.</button>
+      <button class="mtool" onclick="addMemoLine('bullet')">・</button>
+      <button class="mtool" onclick="addMemoLine('counter')">±</button>
+      <button class="mtool" onclick="addMemoLine('checklist')">☑</button>
+    </div>
+    <div class="memo-edit-lines" id="memoEditLines"></div>
+  </div>
+
+  <div class="tagmgr-area" id="tagMgrArea">
+    <div class="tagmgr-header">
+      <button class="hbtn" onclick="closeTagManager()" title="戻る">←</button>
+      <div class="tagmgr-title">タグ管理</div>
+      <div style="width:30px"></div>
+    </div>
+    <div class="tagmgr-add-row">
+      <input id="tagManagerInput" placeholder="新しいタグ名" onkeydown="if(event.key==='Enter')addTagFromManager()">
+      <button class="hbtn" onclick="addTagFromManager()" title="追加">＋</button>
+    </div>
+    <div class="tagmgr-list" id="tagMgrList"></div>
   </div>
 
   <div class="overlay" id="overlay">
@@ -214,6 +285,9 @@ let tasks = [];   // [{id, name, order, tags: [{name, color}]}]
 let memos = [];
 let editTaskId = null;
 let editTaskTags = [];  // [{name, color}] for current edit
+let customTags = JSON.parse(localStorage.getItem('customTags') || '[]');
+let memoEditId = null;
+let memoLines = [];  // [{type, text, value?, checked?}] for memo editor
 
 // GAS call using fetch (handles redirects properly)
 async function gasCall(body) {
@@ -342,28 +416,104 @@ function closeDialog() {
   editTaskTags = [];
 }
 
-// Collect all unique tag names from tasks
-function getAllTags() {
-  const map = new Map();
-  tasks.forEach(t => t.tags.forEach(tg => { if (!map.has(tg.name)) map.set(tg.name, tg.color); }));
-  return Array.from(map.entries()).map(([name, color]) => ({ name, color }));
+// Collect all unique tag names: from tasks + locally-created customTags
+function getAllTagNames() {
+  const s = new Set(customTags);
+  tasks.forEach(t => t.tags.forEach(tg => s.add(tg.name)));
+  return [...s];
+}
+function colorForTagName(name) {
+  for (const t of tasks) {
+    const tg = t.tags.find(x => x.name === name);
+    if (tg) return tg.color || 'default';
+  }
+  return 'default';
 }
 
 function renderTagPills() {
-  const allTags = getAllTags();
+  const allNames = getAllTagNames();
   const container = document.getElementById('tagPills');
-  if (allTags.length === 0) {
+  if (allNames.length === 0) {
     container.innerHTML = '<span style="font-size:11px;color:var(--text3)">タグなし</span>';
     return;
   }
-  container.innerHTML = allTags.map(tg => {
-    const selected = editTaskTags.some(et => et.name === tg.name);
-    const c = TAG_COLORS[tg.color] || TAG_COLORS.default;
+  container.innerHTML = allNames.map(name => {
+    const selected = editTaskTags.some(et => et.name === name);
+    const color = colorForTagName(name);
+    const c = TAG_COLORS[color] || TAG_COLORS.default;
     const style = selected
       ? `color:${c.fg};background:${c.bg}`
       : `color:var(--text3);background:transparent`;
-    return `<div class="tag-pill${selected ? ' selected' : ''}" style="${style}" onclick="toggleTag('${escAttr(tg.name)}','${tg.color}')">${esc(tg.name)}</div>`;
+    return `<div class="tag-pill${selected ? ' selected' : ''}" style="${style}" onclick="toggleTag('${escAttr(name)}','${color}')">${esc(name)}</div>`;
   }).join('');
+}
+
+// ===== タグ管理画面 =====
+function openTagManager() {
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('listArea').style.display = 'none';
+  document.getElementById('statusText').style.display = 'none';
+  document.getElementById('tagManagerInput').value = '';
+  renderTagManagerList();
+  document.getElementById('tagMgrArea').classList.add('active');
+}
+function closeTagManager() {
+  document.getElementById('tagMgrArea').classList.remove('active');
+  document.getElementById('mainHeader').style.display = '';
+  document.getElementById('listArea').style.display = '';
+  document.getElementById('statusText').style.display = '';
+  renderList();
+}
+
+function renderTagManagerList() {
+  const el = document.getElementById('tagMgrList');
+  const names = getAllTagNames();
+  if (!names.length) { el.innerHTML = '<div class="empty">タグはありません</div>'; return; }
+  el.innerHTML = '';
+  names.forEach(name => {
+    const cnt = tasks.filter(t => t.tags.some(tg => tg.name === name)).length;
+    const c = TAG_COLORS[colorForTagName(name)] || TAG_COLORS.default;
+    const item = document.createElement('div');
+    item.className = 'tagmgr-item';
+    item.innerHTML = `
+      <span class="tagmgr-name" style="color:${c.fg}">${esc(name)}${cnt ? `<span class="tagmgr-count">${cnt}件</span>` : ''}</span>
+      <button class="tagmgr-del" title="削除">×</button>`;
+    item.querySelector('.tagmgr-del').addEventListener('click', () => deleteTagGlobal(name));
+    el.appendChild(item);
+  });
+}
+
+function addTagFromManager() {
+  const inp = document.getElementById('tagManagerInput');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (!getAllTagNames().includes(name)) {
+    customTags.push(name);
+    localStorage.setItem('customTags', JSON.stringify(customTags));
+  }
+  inp.value = '';
+  renderTagManagerList();
+}
+
+async function deleteTagGlobal(name) {
+  const affected = tasks.filter(t => t.tags.some(tg => tg.name === name));
+  const msg = affected.length
+    ? `タグ「${name}」を削除しますか？\n${affected.length}件のタスクから外れます。`
+    : `タグ「${name}」を削除しますか？`;
+  if (!confirm(msg)) return;
+  customTags = customTags.filter(n => n !== name);
+  localStorage.setItem('customTags', JSON.stringify(customTags));
+  affected.forEach(t => { t.tags = t.tags.filter(tg => tg.name !== name); });
+  renderTagManagerList();
+  if (!affected.length) { setStatus(`「${name}」を削除しました`); setTimeout(() => setStatus(''), 1500); return; }
+  setStatus('タグ削除中...');
+  try {
+    await Promise.all(affected.map(t => gasCall({ action: 'update', id: t.id, props: { tags: t.tags } })));
+    setStatus(`「${name}」を削除しました`);
+  } catch (e) {
+    setStatus('タグ削除失敗: ' + e.message);
+  }
+  setTimeout(() => setStatus(''), 1500);
 }
 
 function toggleTag(name, color) {
@@ -402,11 +552,157 @@ async function submitDialog() {
   setTimeout(() => setStatus(''), 2000);
 }
 
-function openMemo(id) {
-  if (!pwaUrl) { setStatus('PWA URLを設定してください'); return; }
+// ===== メモ編集画面 =====
+async function openMemo(id) {
+  setStatus('読み込み中...');
+  try {
+    const data = await gasCall({ action: 'memo_get', id });
+    memoEditId = id;
+    memoLines = (data.lines && data.lines.length) ? data.lines : [{ type: 'text', text: '' }];
+    document.getElementById('memoEditTitle').value = data.name === '無題' ? '' : data.name;
+    renderMemoEditLines();
+    showMemoEditor();
+    setStatus('');
+  } catch (e) {
+    setStatus('読み込み失敗: ' + e.message);
+    setTimeout(() => setStatus(''), 2000);
+  }
+}
+
+function showMemoEditor() {
+  document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('listArea').style.display = 'none';
+  document.getElementById('statusText').style.display = 'none';
+  document.getElementById('memoEditArea').classList.add('active');
+}
+
+function closeMemoEditor() {
+  document.getElementById('memoEditArea').classList.remove('active');
+  document.getElementById('mainHeader').style.display = '';
+  document.getElementById('listArea').style.display = '';
+  document.getElementById('statusText').style.display = '';
+  memoEditId = null;
+  memoLines = [];
+  refresh();
+}
+
+function openMemoInBrowser() {
+  if (!pwaUrl || !memoEditId) { setStatus('PWA URLを設定してください'); return; }
   const base = pwaUrl.endsWith('/') ? pwaUrl : pwaUrl + '/';
-  const url = base + '?_t=' + Date.now() + '#memo=' + id;
+  const url = base + '?_t=' + Date.now() + '#memo=' + memoEditId;
   ipcRenderer.send('open-url', url);
+}
+
+function wireLineTextarea(row, i, line) {
+  const ta = row.querySelector('textarea');
+  const autosize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+  ta.addEventListener('input', () => { memoLines[i].text = ta.value; autosize(); });
+  ta.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      ev.preventDefault();
+      memoLines.splice(i + 1, 0, {
+        type: line.type, text: '',
+        value: line.type === 'counter' ? 0 : undefined,
+        checked: line.type === 'checklist' ? false : undefined
+      });
+      renderMemoEditLines();
+      const rows = document.querySelectorAll('.mline-inp');
+      if (rows[i + 1]) rows[i + 1].focus();
+    }
+    if (ev.key === 'Backspace' && ta.value === '' && memoLines.length > 1) {
+      ev.preventDefault();
+      memoLines.splice(i, 1);
+      renderMemoEditLines();
+      const rows = document.querySelectorAll('.mline-inp');
+      if (rows[Math.max(0, i - 1)]) rows[Math.max(0, i - 1)].focus();
+    }
+  });
+  setTimeout(autosize, 0);
+}
+
+function renderMemoEditLines() {
+  const container = document.getElementById('memoEditLines');
+  container.innerHTML = '';
+  let numCount = 0;
+  memoLines.forEach((line, i) => {
+    const row = document.createElement('div');
+    row.className = 'mline-row';
+    if (line.type === 'counter') {
+      row.innerHTML = `
+        <div class="mline-counter">
+          <input placeholder="ラベル" value="${esc(line.text || '')}">
+          <button class="mline-counter-btn" data-d="-1">−</button>
+          <span class="mline-counter-val">${line.value || 0}</span>
+          <button class="mline-counter-btn" data-d="1">+</button>
+        </div>
+        <button class="mline-del" title="削除">×</button>`;
+      const labelInp = row.querySelector('input');
+      labelInp.addEventListener('input', () => { memoLines[i].text = labelInp.value; });
+      row.querySelectorAll('.mline-counter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          memoLines[i].value = (memoLines[i].value || 0) + parseInt(btn.dataset.d, 10);
+          renderMemoEditLines();
+        });
+      });
+    } else if (line.type === 'checklist') {
+      row.innerHTML = `
+        <div class="mline-check${line.checked ? ' checked' : ''}">${line.checked ? '✓' : ''}</div>
+        <textarea class="mline-inp${line.checked ? ' checked-text' : ''}" rows="1" placeholder="チェック項目">${esc(line.text || '')}</textarea>
+        <button class="mline-del" title="削除">×</button>`;
+      row.querySelector('.mline-check').addEventListener('click', () => {
+        memoLines[i].checked = !memoLines[i].checked;
+        renderMemoEditLines();
+      });
+      wireLineTextarea(row, i, line);
+    } else {
+      let prefix = '';
+      if (line.type === 'numbered') { numCount++; prefix = numCount + '.'; }
+      else if (line.type === 'bullet') prefix = '•';
+      row.innerHTML = `
+        <span class="mline-prefix">${prefix}</span>
+        <textarea class="mline-inp" rows="1" placeholder="${line.type === 'numbered' ? 'リスト項目' : line.type === 'bullet' ? '項目' : 'テキスト'}">${esc(line.text || '')}</textarea>
+        <button class="mline-del" title="削除">×</button>`;
+      wireLineTextarea(row, i, line);
+    }
+    row.querySelector('.mline-del').addEventListener('click', () => removeMemoLineRow(i));
+    container.appendChild(row);
+  });
+}
+
+function addMemoLine(type) {
+  const newLine = { type, text: '' };
+  if (type === 'counter') newLine.value = 0;
+  if (type === 'checklist') newLine.checked = false;
+  memoLines.push(newLine);
+  renderMemoEditLines();
+  const rows = document.querySelectorAll('.mline-inp');
+  if (rows.length) rows[rows.length - 1].focus();
+}
+
+function removeMemoLineRow(i) {
+  if (memoLines.length <= 1) {
+    const t = memoLines[0].type;
+    memoLines[0] = { type: t, text: '', value: t === 'counter' ? 0 : undefined, checked: t === 'checklist' ? false : undefined };
+    renderMemoEditLines();
+    return;
+  }
+  memoLines.splice(i, 1);
+  renderMemoEditLines();
+}
+
+async function saveMemoEdit() {
+  if (!memoEditId) return;
+  const title = document.getElementById('memoEditTitle').value.trim() || '無題';
+  const filtered = memoLines.filter(l => l.type === 'counter' || l.type === 'checklist' || (l.text && l.text.trim() !== ''));
+  const lines = filtered.length ? filtered : memoLines;
+  setStatus('保存中...');
+  try {
+    await gasCall({ action: 'memo_update', id: memoEditId, memo: { title, lines } });
+    setStatus('保存しました');
+  } catch (e) {
+    setStatus('保存失敗: ' + e.message);
+  }
+  setTimeout(() => setStatus(''), 1500);
 }
 
 // Settings
