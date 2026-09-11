@@ -47,6 +47,20 @@ html, body {
 }
 .hbtn:hover { background: var(--surface2); }
 
+/* Tag filter bar */
+.tag-bar {
+  display: flex; gap: 6px; padding: 0 14px 8px; flex-shrink: 0;
+  overflow-x: auto; scrollbar-width: none;
+}
+.tag-bar::-webkit-scrollbar { display: none; }
+.tpill {
+  padding: 3px 11px; border-radius: 14px; font-size: 11px; cursor: pointer;
+  white-space: nowrap; border: 1px solid var(--border); background: transparent;
+  color: var(--text3); font-family: inherit; transition: all .15s; flex-shrink: 0;
+}
+.tpill:hover { background: var(--surface2); }
+.tpill.active { border-color: var(--red); background: var(--red); color: #fff; }
+
 /* List */
 .list-area {
   flex: 1; overflow-y: auto; padding: 0 14px; display: flex;
@@ -201,6 +215,7 @@ html, body {
     <button class="hbtn" onclick="showSettings()" title="設定">⚙</button>
   </div>
 
+  <div class="tag-bar" id="tagBar"></div>
   <div class="list-area" id="listArea"></div>
   <div class="status" id="statusText"></div>
 
@@ -288,6 +303,7 @@ let editTaskTags = [];  // [{name, color}] for current edit
 let customTags = JSON.parse(localStorage.getItem('customTags') || '[]');
 let memoEditId = null;
 let memoLines = [];  // [{type, text, value?, checked?}] for memo editor
+let activeTag = null;  // 選択中のタグフィルター（null = すべて）
 
 // GAS call using fetch (handles redirects properly)
 async function gasCall(body) {
@@ -311,18 +327,37 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('tabMemo').classList.toggle('active', tab === 'memo');
   document.getElementById('tabTasks').classList.toggle('active', tab === 'tasks');
+  document.getElementById('tagBar').style.display = tab === 'tasks' ? 'flex' : 'none';
+  renderList();
+}
+
+// タグフィルターバー（スマホ版と同じ挙動：選択タグは新規タスクにも初期適用）
+function renderTagBar() {
+  const bar = document.getElementById('tagBar');
+  const all = ['すべて', ...getAllTagNames()];
+  bar.innerHTML = all.map(name => {
+    const isActive = (name === 'すべて' && !activeTag) || name === activeTag;
+    return `<button class="tpill${isActive ? ' active' : ''}" onclick="setActiveTag('${escAttr(name)}')">${esc(name)}</button>`;
+  }).join('');
+}
+
+function setActiveTag(name) {
+  activeTag = (name === 'すべて') ? null : name;
   renderList();
 }
 
 // Render
 function renderList() {
   const area = document.getElementById('listArea');
+  document.getElementById('tagBar').style.display = currentTab === 'tasks' ? 'flex' : 'none';
   if (currentTab === 'tasks') {
-    if (tasks.length === 0) {
-      area.innerHTML = '<div class="empty">タスクなし</div>';
+    renderTagBar();
+    const shown = activeTag ? tasks.filter(t => t.tags.some(tg => tg.name === activeTag)) : tasks;
+    if (shown.length === 0) {
+      area.innerHTML = `<div class="empty">${activeTag ? 'このタグのタスクなし' : 'タスクなし'}</div>`;
       return;
     }
-    area.innerHTML = tasks.map(t => `
+    area.innerHTML = shown.map(t => `
       <div class="task-item">
         <div class="task-check" onclick="event.stopPropagation();completeTask('${t.id}')" title="完了"></div>
         <div class="task-info" onclick="editTask('${t.id}')">
@@ -450,18 +485,14 @@ function renderTagPills() {
 
 // ===== タグ管理画面 =====
 function openTagManager() {
-  document.getElementById('mainHeader').style.display = 'none';
-  document.getElementById('listArea').style.display = 'none';
-  document.getElementById('statusText').style.display = 'none';
+  hideMainView();
   document.getElementById('tagManagerInput').value = '';
   renderTagManagerList();
   document.getElementById('tagMgrArea').classList.add('active');
 }
 function closeTagManager() {
   document.getElementById('tagMgrArea').classList.remove('active');
-  document.getElementById('mainHeader').style.display = '';
-  document.getElementById('listArea').style.display = '';
-  document.getElementById('statusText').style.display = '';
+  showMainView();
   renderList();
 }
 
@@ -503,6 +534,7 @@ async function deleteTagGlobal(name) {
   if (!confirm(msg)) return;
   customTags = customTags.filter(n => n !== name);
   localStorage.setItem('customTags', JSON.stringify(customTags));
+  if (activeTag === name) activeTag = null;
   affected.forEach(t => { t.tags = t.tags.filter(tg => tg.name !== name); });
   renderTagManagerList();
   if (!affected.length) { setStatus(`「${name}」を削除しました`); setTimeout(() => setStatus(''), 1500); return; }
@@ -544,7 +576,9 @@ async function submitDialog() {
       renderList();
       setStatus('更新しました');
     } else {
-      await gasCall({ action: 'create', task: { name, done: false, tags: [], order: 0 } });
+      const order = tasks.reduce((mx, t) => Math.max(mx, t.order ?? 0), -1) + 1;
+      const tags = activeTag ? [{ name: activeTag, color: colorForTagName(activeTag) }] : [];
+      await gasCall({ action: 'create', task: { name, done: false, tags, order } });
       await refresh();
       setStatus('追加しました');
     }
@@ -570,17 +604,13 @@ async function openMemo(id) {
 }
 
 function showMemoEditor() {
-  document.getElementById('mainHeader').style.display = 'none';
-  document.getElementById('listArea').style.display = 'none';
-  document.getElementById('statusText').style.display = 'none';
+  hideMainView();
   document.getElementById('memoEditArea').classList.add('active');
 }
 
 function closeMemoEditor() {
   document.getElementById('memoEditArea').classList.remove('active');
-  document.getElementById('mainHeader').style.display = '';
-  document.getElementById('listArea').style.display = '';
-  document.getElementById('statusText').style.display = '';
+  showMainView();
   memoEditId = null;
   memoLines = [];
   refresh();
@@ -705,20 +735,30 @@ async function saveMemoEdit() {
   setTimeout(() => setStatus(''), 1500);
 }
 
-// Settings
-function showSettings() {
+// メイン画面（ヘッダー・タグバー・リスト・ステータス）の表示切替
+function hideMainView() {
   document.getElementById('mainHeader').style.display = 'none';
+  document.getElementById('tagBar').style.display = 'none';
   document.getElementById('listArea').style.display = 'none';
   document.getElementById('statusText').style.display = 'none';
+}
+function showMainView() {
+  document.getElementById('mainHeader').style.display = '';
+  document.getElementById('listArea').style.display = '';
+  document.getElementById('statusText').style.display = '';
+  document.getElementById('tagBar').style.display = currentTab === 'tasks' ? 'flex' : 'none';
+}
+
+// Settings
+function showSettings() {
+  hideMainView();
   document.getElementById('settingsArea').classList.add('active');
   document.getElementById('gasUrlInput').value = gasUrl;
   document.getElementById('pwaUrlInput').value = pwaUrl;
 }
 
 function hideSettings() {
-  document.getElementById('mainHeader').style.display = '';
-  document.getElementById('listArea').style.display = '';
-  document.getElementById('statusText').style.display = '';
+  showMainView();
   document.getElementById('settingsArea').classList.remove('active');
 }
 

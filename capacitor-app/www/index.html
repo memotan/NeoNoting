@@ -455,7 +455,9 @@ async function syncFromNotion() {
   setSyncState('busy', '同期中...');
   try {
     const data = await gasCall({ action: 'list' });
-    tasks = data;
+    // 配列順＝表示順（追加順）に揃える。ドラッグ並び替えは配列を直接操作するため、
+    // ここで一度だけ order 昇順に整列させ、以降は配列順をそのまま信頼する。
+    tasks = data.slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
     const notionTags = new Set(customTags);
     tasks.forEach(t => t.tags.forEach(tg => notionTags.add(getTagName(tg))));
     customTags = [...notionTags];
@@ -474,9 +476,9 @@ async function addTask() {
   const name = inp.value.trim();
   if (!name) return;
   const tags = selNewTags.map(n => ({ name: n, color: 'default' }));
-  const order = tasks.filter(t => !t.done).length;
+  const order = tasks.reduce((mx, t) => Math.max(mx, t.order ?? 0), -1) + 1;
   const tmp = { id: 'tmp_' + Date.now(), name, done: false, tags, order };
-  tasks.unshift(tmp);
+  tasks.push(tmp);
   inp.value = '';
   selNewTags = [];
   renderAll();
@@ -535,7 +537,13 @@ async function clearDone() {
   }
 }
 
+// 未完了タスクの order を現在の並び順で振り直す（表示は order 昇順＝追加順）
+function reindexActiveOrders() {
+  tasks.filter(t => !t.done).forEach((t, i) => { t.order = i; });
+}
+
 async function pushReorder() {
+  reindexActiveOrders();
   if (!gasUrl) return;
   const active = tasks.filter(t => !t.done);
   const orders = active.map((t, i) => ({ id: t.id, order: i }));
@@ -730,6 +738,7 @@ function setupDragDesktop(div) {
     if (si < 0 || di < 0) return;
     const [m] = tasks.splice(si, 1);
     tasks.splice(di, 0, m);
+    reindexActiveOrders();
     renderAll();
   });
 }
