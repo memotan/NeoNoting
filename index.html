@@ -336,6 +336,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       onkeydown="if(event.key==='Enter')saveSheet()">
     <span class="sheet-label">タグ</span>
     <div class="sheet-tags" id="sheetTags"></div>
+    <span class="sheet-label">リマインダー</span>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="datetime-local" class="sheet-inp" id="sheetReminderInp" style="flex:1;margin-bottom:0">
+      <button class="fab-btn" onclick="clearSheetReminder()" aria-label="リマインダーを削除" style="width:44px;flex-shrink:0"><i class="ti ti-x" aria-hidden="true"></i></button>
+    </div>
     <button class="sheet-save" id="sheetSaveBtn" onclick="saveSheet()">保存</button>
   </div>
 </div>
@@ -357,7 +362,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v7';
+const APP_VERSION = 'v8';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -689,12 +694,14 @@ function makeCard(task) {
   div.dataset.id = String(task.id);
   div.draggable = true;
 
-  const tagsHtml = task.tags.length
-    ? `<div class="ttags">${task.tags.map(tg => {
-        const s = getTagStyle(tg);
-        return `<span class="ttag" style="color:${s.fg};background:${s.bg}">${getTagName(tg)}</span>`;
-      }).join('')}</div>`
-    : '';
+  const badges = task.tags.map(tg => {
+    const s = getTagStyle(tg);
+    return `<span class="ttag" style="color:${s.fg};background:${s.bg}">${getTagName(tg)}</span>`;
+  });
+  if (task.reminderAt && !task.done) {
+    badges.push(`<span class="ttag" style="color:#ffcc80;background:#3b1e00">⏰ ${formatReminderShort(task.reminderAt)}</span>`);
+  }
+  const tagsHtml = badges.length ? `<div class="ttags">${badges.join('')}</div>` : '';
 
   div.innerHTML = `
     <button class="chk${task.done ? ' done' : ''}" ${task.done ? 'disabled' : `onclick="toggleTask('${task.id}')"`} aria-label="${task.done ? '未完了' : '完了'}"></button>
@@ -829,6 +836,7 @@ function openSheet(id) {
   sheetSelTags = task.tags.map(tg => getTagName(tg));
   document.getElementById('sheetTitle').textContent = 'タスクを編集';
   document.getElementById('sheetNameInp').value = task.name;
+  document.getElementById('sheetReminderInp').value = isoToLocalInput(task.reminderAt);
   const sheetSaveBtn = document.getElementById('sheetSaveBtn');
   sheetSaveBtn.textContent = task.done ? '復活' : '保存';
   sheetSaveBtn.classList.toggle('revive', task.done);
@@ -864,6 +872,28 @@ function toggleSheetTag(n) {
   renderSheetTags();
 }
 
+function clearSheetReminder() {
+  document.getElementById('sheetReminderInp').value = '';
+}
+
+function isoToLocalInput(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
+function localInputToIso(value) {
+  if (!value) return null;
+  return new Date(value).toISOString();
+}
+
+function formatReminderShort(iso) {
+  const d = new Date(iso);
+  const pad = n => String(n).padStart(2, '0');
+  return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
 function addSheetTag() {
   const t = prompt('新しいタグ名:');
   if (!t || !t.trim()) return;
@@ -887,13 +917,14 @@ async function saveSheet() {
     const existing = task.tags.find(tg => getTagName(tg) === n);
     return existing || { name: n, color: 'default' };
   });
+  task.reminderAt = localInputToIso(document.getElementById('sheetReminderInp').value);
   if (wasDone) task.done = false;
   closeSheet();
   renderAll();
   if (gasUrl && !String(task.id).startsWith('tmp_')) {
     setSyncState('busy', wasDone ? '復活中...' : '更新中...');
     try {
-      const props = { name: task.name, tags: task.tags };
+      const props = { name: task.name, tags: task.tags, reminderAt: task.reminderAt };
       if (wasDone) props.done = false;
       await gasCall({ action: 'update', id: task.id, props });
       setSyncState('ok', wasDone ? '復活済み' : '更新済み');
