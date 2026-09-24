@@ -362,7 +362,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -1399,6 +1399,8 @@ async function deleteMemo(id) {
   const el = document.getElementById('mainScreen');
   let sx, sy;
   el.addEventListener('touchstart', e => {
+    // タグバーは横スクロールさせたいのでスワイプ判定から除外
+    if (e.target.closest('.tag-bar')) { sx = null; return; }
     sx = e.touches[0].clientX;
     sy = e.touches[0].clientY;
   }, { passive: true });
