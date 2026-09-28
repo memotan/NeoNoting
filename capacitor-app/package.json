@@ -5,7 +5,8 @@
   "scripts": {
     "sync": "cap sync",
     "open": "cap open android",
-    "build": "cap sync && cap open android"
+    "build": "cap sync && cap open android",
+    "icons": "capacitor-assets generate --android"
   },
   "dependencies": {
     "@capacitor/core": "^6.0.0",
@@ -15,6 +16,7 @@
     "@capacitor/app": "^6.0.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^6.0.0"
   }
 }

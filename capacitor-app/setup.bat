@@ -7,6 +7,9 @@ echo.
 echo Adding Android platform...
 call npx cap add android
 echo.
+echo Generating app icons from assets/...
+call npx capacitor-assets generate --android
+echo.
 echo Syncing web assets...
 call npx cap sync
 echo.
