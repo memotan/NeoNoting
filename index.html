@@ -168,13 +168,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .sheet-save.revive:active{background:#000099}
 
 /* メモ一覧 */
-.memo-grid{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s,opacity .15s;position:relative;min-height:100px;display:flex;flex-direction:column;gap:8px;touch-action:pan-y;user-select:none}
+.memo-grid{padding:0 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s,opacity .15s;position:relative;min-height:100px;min-width:0;display:flex;flex-direction:column;gap:8px;touch-action:pan-y;user-select:none}
 .memo-card.dragging{opacity:.3}
 .memo-card.drag-over{outline:2px dashed var(--text4)}
 .memo-card:active{background:var(--surface2)}
 .memo-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-all}
-.memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
+.memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .memo-card-preview .pv-num{color:var(--text2)}
 .memo-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text4);font-size:14px;cursor:pointer;padding:4px;transition:color .15s;line-height:1}
 .memo-card-del:active{color:var(--red) !important}
@@ -403,7 +403,7 @@ function switchTab(tab) {
   document.getElementById('memoListArea').style.display = tab === 'memo' ? 'block' : 'none';
   document.getElementById('scrollArea').style.display = tab === 'tasks' ? 'block' : 'none';
   document.querySelector('.input-area').style.display = tab === 'tasks' ? 'block' : 'none';
-  if (tab === 'memo' && memos.length === 0 && gasUrl) syncMemos();
+  if (tab === 'memo' && gasUrl) syncMemos();
   if (tab === 'memo') renderMemoList();
 }
 
@@ -955,13 +955,18 @@ function markMemoDirty() {
 
 document.getElementById('memoTitleInp').addEventListener('input', markMemoDirty);
 
+let memoSyncing = false;
 async function syncMemos() {
-  if (!gasUrl) return;
+  if (!gasUrl || memoSyncing) return;
+  memoSyncing = true;
   try {
     memos = await gasCall({ action: 'memo_list' });
     applyMemoOrder();
     renderMemoList();
+    // 次回起動時に即表示できるよう、一覧をローカルにキャッシュ
+    try { localStorage.setItem('nt_memo_cache', JSON.stringify(memos)); } catch(e) {}
   } catch(e) { /* サイレント */ }
+  finally { memoSyncing = false; }
 }
 
 function applyMemoOrder() {
@@ -1471,8 +1476,14 @@ function setupCapacitorDeepLink() {
 setupCapacitorDeepLink();
 
 if (gasUrl) {
+  // メモ一覧のキャッシュがあれば先に読み込んでおく（Memoタブを開いた瞬間に表示できる）
+  try {
+    const cached = JSON.parse(localStorage.getItem('nt_memo_cache') || 'null');
+    if (Array.isArray(cached)) { memos = cached; applyMemoOrder(); }
+  } catch(e) {}
   handleDeepLink().then(handled => {
-    if (!handled) syncFromNotion();
+    // Tasks の同期が終わったら、Memo も裏で先読みする
+    if (!handled) syncFromNotion().then(() => syncMemos());
   });
   window.addEventListener('hashchange', () => handleDeepLink());
 } else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
