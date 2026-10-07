@@ -168,13 +168,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .sheet-save.revive:active{background:#000099}
 
 /* メモ一覧 */
-.memo-grid{padding:0 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s,opacity .15s;position:relative;min-height:100px;display:flex;flex-direction:column;gap:8px;touch-action:pan-y;user-select:none}
+.memo-grid{padding:0 12px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.memo-card{background:var(--surface);border-radius:14px;padding:14px 14px 12px;cursor:pointer;transition:background .15s,opacity .15s;position:relative;min-height:100px;min-width:0;display:flex;flex-direction:column;gap:8px;touch-action:pan-y;user-select:none}
 .memo-card.dragging{opacity:.3}
 .memo-card.drag-over{outline:2px dashed var(--text4)}
 .memo-card:active{background:var(--surface2)}
 .memo-card-title{font-size:14px;font-weight:600;color:var(--text);line-height:1.3;word-break:break-all}
-.memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical}
+.memo-card-preview{flex:1;font-size:12px;color:var(--text3);line-height:1.6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow-wrap:anywhere}
 .memo-card-preview .pv-num{color:var(--text2)}
 .memo-card-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text4);font-size:14px;cursor:pointer;padding:4px;transition:color .15s;line-height:1}
 .memo-card-del:active{color:var(--red) !important}
@@ -220,6 +220,53 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .memo-add-line{margin:4px 0 0 28px;background:none;border:none;color:var(--text4);font-size:13px;cursor:pointer;font-family:inherit;padding:6px 0;display:flex;align-items:center;gap:6px;transition:color .15s}
 .memo-add-line:active{color:var(--text3)}
 .memo-sync-row{flex-shrink:0;padding:6px 16px;padding-bottom:calc(6px + var(--safe-bottom));display:flex;align-items:center;gap:8px;border-top:1px solid var(--border)}
+
+/* ===== PCレイアウト（幅900px以上：Tasks | Memo の2ペイン） =====
+   スマホ向けJSは display をインライン指定で切り替えているため、
+   PC幅では !important で上書きして両ペインを常時表示する。 */
+.pane-title{display:none}
+@media (min-width:900px){
+  #app{display:grid;max-width:1400px;grid-template-columns:minmax(380px,460px) minmax(0,1fr);grid-template-rows:auto auto auto minmax(0,1fr) auto}
+  #mainScreen{display:contents !important}
+
+  .header{grid-column:1/-1;grid-row:1;padding:20px 24px 14px}
+  .header h1{font-size:34px}
+  .hicons{gap:8px;font-size:20px}
+  .hicons i{padding:8px;border-radius:10px;transition:background .15s,color .15s}
+  .hicons i:hover{background:var(--surface);color:var(--text)}
+  .tabs{display:none}
+
+  .pane-title{display:block;grid-row:2;padding:4px 16px 12px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text3)}
+  .pane-title-tasks{grid-column:1}
+  .pane-title-memo{grid-column:2;padding-left:24px;border-left:1px solid var(--border)}
+
+  /* 左ペイン: Tasks */
+  .tag-bar{display:flex !important;grid-column:1;grid-row:3;flex-wrap:wrap;overflow-x:visible}
+  #scrollArea{display:block !important;grid-column:1;grid-row:4;min-height:0}
+  .input-area{display:block !important;grid-column:1;grid-row:5}
+  .task-card:hover{background:var(--surface2)}
+  .tpill:not(.active):hover{border-color:var(--text4);color:var(--text2)}
+
+  /* 右ペイン: Memo 一覧 / 編集（編集中は一覧と入れ替わる） */
+  #memoListArea{display:flex !important;flex-direction:column;grid-column:2;grid-row:3/6;min-height:0;padding-bottom:0 !important;border-left:1px solid var(--border)}
+  #memoListArea .memo-grid{flex:1 0 auto;align-content:start}
+  #memoListArea .memo-fab-row{margin-top:auto}
+  #app.editing-memo #memoListArea{display:none !important}
+  .memo-grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;padding:4px 20px 16px}
+  .memo-grid>*{min-width:0}
+  .memo-card:hover{background:var(--surface2)}
+  .memo-fab-row{position:sticky;left:auto;bottom:0;transform:none;width:auto;max-width:none;padding:12px 20px;margin:0}
+  #memoEditScreen{grid-column:2;grid-row:3/6;height:auto;min-height:0;overflow:hidden;border-left:1px solid var(--border)}
+
+  /* 設定: 全画面ではなく中央のモーダルに */
+  .settings-screen.active{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:520px;max-width:90vw;height:auto;max-height:86vh;background:var(--bg);border:1px solid var(--border);border-radius:18px;box-shadow:0 0 0 100vmax rgba(0,0,0,.6),0 24px 60px rgba(0,0,0,.6);z-index:300;overflow:hidden}
+
+  /* 編集シート/タグシート: 画面下部ではなく中央のダイアログに */
+  .sheet{top:50%;bottom:auto;transform:translate(-50%,-46%);opacity:0;pointer-events:none;max-width:520px;border-radius:20px;padding-bottom:8px;box-shadow:0 24px 60px rgba(0,0,0,.6);transition:transform .25s cubic-bezier(.32,.72,0,1),opacity .2s}
+  .sheet.open{transform:translate(-50%,-50%);opacity:1;pointer-events:auto}
+  .sheet-handle{display:none}
+  .sheet-header{padding-top:20px}
+}
 </style>
 </head>
 <body>
@@ -229,7 +276,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
     <div class="header">
       <h1>NeoNoting</h1>
       <div class="hicons">
-        <i class="ti ti-refresh" id="refreshBtn" aria-label="同期" onclick="syncFromNotion()"></i>
+        <i class="ti ti-refresh" id="refreshBtn" aria-label="同期" onclick="refreshAll()"></i>
         <i class="ti ti-settings" aria-label="設定" onclick="showSettings()"></i>
       </div>
     </div>
@@ -237,6 +284,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
       <button class="tab" id="tabMemo" onclick="switchTab('memo')">Memo</button>
       <button class="tab active" id="tabTasks" onclick="switchTab('tasks')">Tasks</button>
     </div>
+    <div class="pane-title pane-title-tasks">Tasks</div>
+    <div class="pane-title pane-title-memo">Memo</div>
 
     <!-- メモ一覧 -->
     <div id="memoListArea" style="display:none;flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:80px">
@@ -364,7 +413,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 </div>
 
 <script>
-const APP_VERSION = 'v10';
+const APP_VERSION = 'v11';
 document.querySelectorAll('.app-version').forEach(el => el.textContent = APP_VERSION);
 
 const TAG_COLORS = {
@@ -395,6 +444,10 @@ let memoLines = []; // [{type:'text'|'numbered', text:''}]
 let focusedLineIndex = null;
 let currentTab = 'tasks';
 
+// PC幅（2ペイン表示）かどうか。CSSの @media (min-width:900px) と揃えること
+const wideQuery = window.matchMedia('(min-width: 900px)');
+const isWide = () => wideQuery.matches;
+
 function switchTab(tab) {
   currentTab = tab;
   document.getElementById('tabMemo').classList.toggle('active', tab === 'memo');
@@ -403,7 +456,7 @@ function switchTab(tab) {
   document.getElementById('memoListArea').style.display = tab === 'memo' ? 'block' : 'none';
   document.getElementById('scrollArea').style.display = tab === 'tasks' ? 'block' : 'none';
   document.querySelector('.input-area').style.display = tab === 'tasks' ? 'block' : 'none';
-  if (tab === 'memo' && memos.length === 0 && gasUrl) syncMemos();
+  if (tab === 'memo' && gasUrl) syncMemos();
   if (tab === 'memo') renderMemoList();
 }
 
@@ -455,6 +508,12 @@ async function gasCall(body) {
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || '不明なエラー');
   return json.data;
+}
+
+// ヘッダーの更新ボタン。PC幅は Tasks と Memo が同時に見えているので両方更新する
+async function refreshAll() {
+  await syncFromNotion();
+  if (isWide()) await syncMemos();
 }
 
 async function syncFromNotion() {
@@ -955,13 +1014,18 @@ function markMemoDirty() {
 
 document.getElementById('memoTitleInp').addEventListener('input', markMemoDirty);
 
+let memoSyncing = false;
 async function syncMemos() {
-  if (!gasUrl) return;
+  if (!gasUrl || memoSyncing) return;
+  memoSyncing = true;
   try {
     memos = await gasCall({ action: 'memo_list' });
     applyMemoOrder();
     renderMemoList();
+    // 次回起動時に即表示できるよう、一覧をローカルにキャッシュ
+    try { localStorage.setItem('nt_memo_cache', JSON.stringify(memos)); } catch(e) {}
   } catch(e) { /* サイレント */ }
+  finally { memoSyncing = false; }
 }
 
 function applyMemoOrder() {
@@ -1226,6 +1290,7 @@ async function openMemoEdit(id) {
 function showMemoEdit() {
   document.getElementById('mainScreen').style.display = 'none';
   document.getElementById('memoEditScreen').classList.add('active');
+  document.getElementById('app').classList.add('editing-memo');
 }
 
 function closeMemoEdit() {
@@ -1236,6 +1301,7 @@ function closeMemoEdit() {
   currentMemoId = null;
   memoLines = [];
   document.getElementById('memoEditScreen').classList.remove('active');
+  document.getElementById('app').classList.remove('editing-memo');
   document.getElementById('mainScreen').style.display = 'flex';
   syncMemos();
 }
@@ -1407,7 +1473,7 @@ async function deleteMemo(id) {
     sy = e.touches[0].clientY;
   }, { passive: true });
   el.addEventListener('touchend', e => {
-    if (sx == null) return;
+    if (sx == null || isWide()) return;
     const dx = e.changedTouches[0].clientX - sx;
     const dy = e.changedTouches[0].clientY - sy;
     sx = null;
@@ -1470,9 +1536,34 @@ function setupCapacitorDeepLink() {
 }
 setupCapacitorDeepLink();
 
+// ブラウザ幅がPC幅を跨いだとき、2ペイン側で必要になるメモ一覧を用意する
+wideQuery.addEventListener('change', e => {
+  if (!e.matches || !gasUrl) return;
+  if (memos.length === 0) syncMemos(); else renderMemoList();
+});
+
+// PC向けキーボード操作: Esc で設定・シートを閉じる / Ctrl(Cmd)+S でメモ保存
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('settingsScreen').classList.contains('active')) showMain();
+    else closeSheets();
+  } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's'
+             && document.getElementById('memoEditScreen').classList.contains('active')) {
+    e.preventDefault();
+    saveMemo();
+  }
+});
+
 if (gasUrl) {
+  // メモ一覧のキャッシュがあれば先に読み込んでおく（Memoタブを開いた瞬間に表示できる）
+  try {
+    const cached = JSON.parse(localStorage.getItem('nt_memo_cache') || 'null');
+    if (Array.isArray(cached)) { memos = cached; applyMemoOrder(); }
+  } catch(e) {}
   handleDeepLink().then(handled => {
-    if (!handled) syncFromNotion();
+    // Tasks の同期が終わったら、Memo も裏で先読みする。
+    // PC幅は Tasks が常に見えているため、メモを直接開いた場合でも Tasks を同期する
+    if (!handled || isWide()) syncFromNotion().then(() => syncMemos());
   });
   window.addEventListener('hashchange', () => handleDeepLink());
 } else { setSyncState('', '未接続 — 設定からGAS URLを入力してください'); renderAll(); }
